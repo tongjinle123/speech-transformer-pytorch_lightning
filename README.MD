@@ -2,12 +2,16 @@
 
 highlights:
     
-    use multiple datasets
+    can use multiple chinese datasets 
     use sentencepiece encoding 
     use tfrecord for fast dataloading
-    use specaugment layer 
-    use speed perturb
+    use batched specaugment layer 
+    use speed perturb fully
     use low frame rate
+    joint training with ctc & cross entropy (label smoothing)
+    lookahead & radam
+    fast decoding (TODO)
+    
 
 datasets:
     
@@ -20,14 +24,14 @@ datasets:
     datatang mix 200h 
     librispeech 960h
 
-models(todo):
-    
-    transformer ctc
-    transformer encoder-decoder
-    transformer ctc-encoder-decoder
-    cnn-transformer ctc
-    cnn-transformer encoder-decoder
-    cnn-transformer ctc-encoder-decoder
-    transformer-transducer 
-    transformer-aligner
+models:
+        
+    transformer encoder-decoder 
+    transformer ctc-encoder-decoder 
+    transformer ctc (todo)
+    cnn-transformer ctc (todo)
+    cnn-transformer encoder-decoder (todo)
+    cnn-transformer ctc-encoder-decoder (todo)
+    transformer-transducer (todo)
+    transformer-aligner (todo)
 
