@@ -3,8 +3,10 @@
 This is a mixed project borrowing from many other open projects 
 opened recently, trying to use most technique and tricks. And with 
 pytorch_lightning, experiments can be carried out in an easy way. 
-I will try to code in a clean style, for new guys to understand easily.
-Any ideas can put into the issue, and welcome for discussion.
+I will try to code in a clean style, with well named functions and 
+class and designed file tree, for new guys to understand easily.
+And i will try to make evey calculation in a batched and cleaned way.
+Any ideas can be put into the issues, and welcome for discussion.
 
 highlights:
     
