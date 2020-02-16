@@ -6,7 +6,7 @@ highlights:
     use sentencepiece encoding 
     use tfrecord for fast dataloading
     use batched specaugment layer 
-    use speed perturb fully
+    use speed perturb
     use low frame rate
     joint training with ctc & cross entropy (label smoothing)
     lookahead & radam
@@ -35,3 +35,9 @@ models:
     transformer-transducer (todo)
     transformer-aligner (todo)
 
+reference:
+
+    https://github.com/ZhengkunTian/OpenTransformer
+    https://github.com/espnet/espnet
+    https://github.com/jadore801120/attention-is-all-you-need-pytorch
+    
