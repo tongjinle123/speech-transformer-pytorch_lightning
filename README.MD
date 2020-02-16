@@ -26,14 +26,11 @@ datasets:
 
 models:
         
-    transformer encoder-decoder 
-    transformer ctc-encoder-decoder 
-    transformer ctc (todo)
-    cnn-transformer ctc (todo)
-    cnn-transformer encoder-decoder (todo)
-    cnn-transformer ctc-encoder-decoder (todo)
-    transformer-transducer (todo)
-    transformer-aligner (todo)
+    (cnn)transformer encoder-decoder 
+    (cnn)transformer ctc-encoder-decoder 
+    (cnn)transformer ctc (todo)
+    (cnn)transformer-transducer (todo)
+    (cnn)transformer-aligner (todo)
 
 reference:
 
