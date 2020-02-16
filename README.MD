@@ -1,5 +1,11 @@
 ## end2end chinese-english code-swiching speech recognition in pytorch
 
+This is a mixed project borrowing from many other open projects 
+opened recently, trying to use most technics an tricks. And with 
+pytorch_lightning, experiments can be carried out in an easy way. 
+I will try to code in a clean style, for new guys to understand easily.
+Any ideas can put into the issue, and wellcome for discussion.
+
 highlights:
     
     can use multiple chinese datasets 
@@ -12,7 +18,6 @@ highlights:
     lookahead & radam
     fast decoding (TODO)
     
-
 datasets:
     
     aishell1 170h
@@ -37,4 +42,7 @@ reference:
     https://github.com/ZhengkunTian/OpenTransformer
     https://github.com/espnet/espnet
     https://github.com/jadore801120/attention-is-all-you-need-pytorch
+    https://github.com/alphadl/lookahead.pytorch
+    https://github.com/LiyuanLucasLiu/RAdam
+    https://github.com/vahidk/tfrecord
     
