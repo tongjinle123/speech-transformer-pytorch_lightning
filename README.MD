@@ -1,10 +1,10 @@
 ## end2end chinese-english code-swiching speech recognition in pytorch
 
 This is a mixed project borrowing from many other open projects 
-opened recently, trying to use most technics an tricks. And with 
+opened recently, trying to use most technique and tricks. And with 
 pytorch_lightning, experiments can be carried out in an easy way. 
 I will try to code in a clean style, for new guys to understand easily.
-Any ideas can put into the issue, and wellcome for discussion.
+Any ideas can put into the issue, and welcome for discussion.
 
 highlights:
     
