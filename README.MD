@@ -6,19 +6,21 @@ pytorch_lightning, experiments can be carried out in an easy way.
 I will try to code in a clean style, with well named functions and 
 class and designed file tree, for new guys to understand easily.
 And i will try to make evey calculation in a batched and cleaned way.
-Any ideas can be put into the issues, and welcome for discussion.
+Any ideas can be put into the issues, and welcome for discussion. 
+(This project is still being building and reorganizing)
 
 highlights:
     
-    can use multiple chinese datasets 
-    use sentencepiece encoding 
-    use tfrecord for fast dataloading
-    use batched specaugment layer 
-    use speed perturb
+    can use multiple chinese datasets, with scripts processing those different dataset into a single style
+    use sentencepiece encoding for the extension of code-switching
+    use tfrecord for fast dataloading (to be add)
+    a batched specaugment layer, can be use as a layer like dropout
+    use speed perturb in one line
     use low frame rate
     joint training with ctc & cross entropy (label smoothing)
     lookahead & radam
     fast decoding (TODO)
+    dockerfile for quick environment install (to be add)
     
 datasets:
     
