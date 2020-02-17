@@ -11,7 +11,7 @@ class SpecEncoder(t.nn.Module):
     def __init__(self, input_size, model_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, padding_idx, init_size):
         super(SpecEncoder, self).__init__()
 
-        self.input_layer = LinearWithPosEmbedding(input_size, model_size, dropout_rate=0)
+        self.input_layer = LinearWithPosEmbedding(input_size, model_size, dropout_rate=dropout)
         self.layer_norm = t.nn.LayerNorm(model_size, eps=1/(model_size ** -0.5))
         self.transformer_encoder = TransformerEncoder(
             model_size, feed_forward_size, hidden_size, dropout, num_head, num_layer

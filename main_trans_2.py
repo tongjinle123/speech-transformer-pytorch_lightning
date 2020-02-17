@@ -1,8 +1,7 @@
 from pytorch_lightning.trainer.trainer import Trainer
-from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.logging import TestTubeLogger
-from src.model.transformer.lightning_model import LightningModel
+from src.model.transformer.lightning_model_2 import LightningModel
 import torch.backends.cudnn as cudnn
 import random
 import torch as t
@@ -32,14 +31,11 @@ def main(hparams):
     exp_root = 'exp'
     log_folder = 'lightning_logs'
     log_root = os.path.join(exp_root, log_folder)
-    logger = TestTubeLogger(exp_root, name=log_folder, version=1000)
-    checkpoint = ModelCheckpoint()
-    # checkpoint = ModelCheckpoint(filepath='exp/lightning_logs/version_1000/checkpoints/',
+    logger = TestTubeLogger(exp_root, name=log_folder, version=1001)
+    # checkpoint = ModelCheckpoint(filepath='exp/lightning_logs/version_1001/checkpoints/',
     #                              monitor='wer', verbose=1, save_best_only=False)
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
     trainer = Trainer(
         logger=logger,
-        early_stop_callback=early_stopping,
         # checkpoint_callback=checkpoint,
         # fast_dev_run=True,
         # overfit_pct=0.03,

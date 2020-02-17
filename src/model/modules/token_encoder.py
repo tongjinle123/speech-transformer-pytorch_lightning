@@ -10,7 +10,7 @@ class TokenEncoder(t.nn.Module):
     def __init__(self, input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, vocab_size,
                  padding_idx, max_length=2048, share_weight=True):
         super(TokenEncoder, self).__init__()
-        self.embedding = Embedding(vocab_size, input_size, padding_idx, max_length, dropout=0)
+        self.embedding = Embedding(vocab_size, input_size, padding_idx, max_length, dropout=dropout)
         self.transformer_encoder = TransformerEncoder(input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer)
         self.layer_norm = t.nn.LayerNorm(input_size, eps=(1/(input_size ** -0.5)))
         self.output_layer = t.nn.Linear(input_size, vocab_size, bias=True)

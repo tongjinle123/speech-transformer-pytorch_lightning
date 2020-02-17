@@ -126,27 +126,3 @@ class Transformer(t.nn.Module):
             pass
 
 
-
-
-
-
-        #
-        # # for i in range(self.max_token_length):
-        # #     output = self.token_decoder(input_token, spec_feature, token_self_attention_mask, dot_attention_mask)
-        #
-        # encoded, wave_pad_mask = self.encode(input)
-        #
-        # batch_size = encoded.size(0)
-        # device = encoded.device
-        # bos_id = self.vocab.bos_id
-        #
-        # input_text = t.full((batch_size, 1), bos_id, dtype=t.long, device=device)
-        # prob_list = []
-        # for i in range(30):
-        #     decoded = self.decode(encoded, wave_pad_mask, input_text)
-        #     lasted_decoded_id = t.argmax(decoded, -1)[:, -1:]
-        #     last_topk_id = decoded.topk(5, -1)[1][:, -1]
-        #     prob_list.append(last_topk_id)
-        #     input_text = t.cat([input_text, lasted_decoded_id], -1)
-        #
-        # return input_text, prob_list

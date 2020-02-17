@@ -31,14 +31,14 @@ class TokenDecoder(t.nn.Module):
         net = self.output_layer(net)
         return net
 
-    def greedy_decode(self, encoder_output, dot_attention_mask):
+
+    def beam_search_decode(self, encoder_output, dot_attention_mask, beam_size):
         batch_size = encoder_output.size(0)
         device = encoder_output.device
         token_id = t.full((batch_size, 1), fill_value=self.bos_id, dtype=t.long, device=device)
         length = t.LongTensor([1] * batch_size, device=device)
         #         length = t.full((batch_size), fill_value=1, dtype=t.long, device=device)
         probs = t.Tensor().to(device)
-        end_lines = 0
         # count = 0
         with t.no_grad():
             for i in range(self.max_length):
@@ -47,14 +47,40 @@ class TokenDecoder(t.nn.Module):
                     self_attention_mask = Masker.get_dot_mask(token_mask, token_mask)
                     last_prob, last_token_id = self.decode_step(
                         token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask,
-                        1, return_last=True)
+                        topk=beam_size, return_last=True)
+
+
+
+                except:
+                    break
+        return None
+
+
+    def greedy_decode(self, encoder_output, dot_attention_mask):
+        """
+        batched greedy decode
+        """
+        batch_size = encoder_output.size(0)
+        device = encoder_output.device
+        token_id = t.full((batch_size, 1), fill_value=self.bos_id, dtype=t.long, device=device)
+        length = t.LongTensor([1] * batch_size, device=device)
+        #         length = t.full((batch_size), fill_value=1, dtype=t.long, device=device)
+        probs = t.Tensor().to(device)
+        # count = 0
+        with t.no_grad():
+            for i in range(self.max_length):
+                try:
+                    token_mask = Masker.get_mask(length)
+                    self_attention_mask = Masker.get_dot_mask(token_mask, token_mask)
+                    last_prob, last_token_id = self.decode_step(
+                        token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask,
+                        topk=1, return_last=True)
                     token_id = t.cat([token_id, last_token_id], dim=1)
                     # print('concate, tokenid', token_id)
                     probs = t.cat([probs, last_prob], dim=1)
                     for index, id in enumerate(last_token_id.squeeze(1)):
                         if id != self.eos_id:
                             length[index] += 1
-                            end_lines += 1
                 except:
                     #TODO: to be more consious
                     break
@@ -82,12 +108,3 @@ class TokenDecoder(t.nn.Module):
         else:
             return probs, indexs
 
-
-    def beam_search_decode(self, encoder_output, dot_attention_mask):
-        batch_size = encoder_output.size(0)
-        device = encoder_output.device
-        token_id = t.full((batch_size, 1), fill_value=self.bos_id, dtype=t.long, device=device)
-        length = t.LongTensor([1] * batch_size, device=device)
-        #         length = t.full((batch_size), fill_value=1, dtype=t.long, device=device)
-        probs = t.Tensor().to(device)
-        pass

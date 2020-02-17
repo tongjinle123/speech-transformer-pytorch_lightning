@@ -238,8 +238,6 @@ class LinearWithPosEmbedding(nn.Module):
     def __init__(self, input_size, d_model, dropout_rate=0.0):
         super(LinearWithPosEmbedding, self).__init__()
         self.linear = nn.Linear(input_size, d_model)
-        self.dropout = nn.Dropout(dropout_rate)
-        self.activation = Gelu()
         self.pos_embedding = ScaledPositionalEncoding(d_model, dropout_rate)
         nn.init.xavier_normal_(self.linear.weight)
 
