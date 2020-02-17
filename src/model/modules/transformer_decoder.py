@@ -28,12 +28,9 @@ class TransformerDecoderLayer(t.nn.Module):
 
     def forward(self, src, src_mask, encoder_output, self_attention_mask=None, dot_attention_mask=None):
         net = self.multi_head_self_attention_block(src, src, src, self_attention_mask)
-        # net *= src_mask
-        net.masked_fill_(src_mask==0, 0.0)
+        net.masked_fill_(src_mask == 0, 0.0)
         net = self.multi_head_dot_attention_block(net, encoder_output, encoder_output, dot_attention_mask)
-        # net *= src_mask
-        net.masked_fill_(src_mask==0, 0.0)
+        net.masked_fill_(src_mask == 0, 0.0)
         net = self.feed_foward_block(net)
-        # net *= src_mask
-        net.masked_fill_(src_mask==0, 0.0)
+        net.masked_fill_(src_mask == 0, 0.0)
         return net

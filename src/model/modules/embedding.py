@@ -8,16 +8,21 @@ class Embedding(t.nn.Module):
     """
     combine word embedding and position embedding
     """
-    def __init__(self, vocab_size=1000, embedding_size=512, padding_idx=1, max_length=2048, dropout=0.1):
+    def __init__(self, vocab_size=1000, embedding_size=512, padding_idx=0, max_length=2048, dropout=0.1,
+                 scale_word_embedding=True):
         super(Embedding, self).__init__()
-        self.word_embedding = t.nn.Embedding(vocab_size, embedding_size)
+        self.word_embedding = t.nn.Embedding(vocab_size, embedding_size, padding_idx)
         self.position_embedding = ScaledPositionalEncoding(
             d_model=embedding_size, dropout_rate=dropout, max_len=max_length)
-        t.nn.init.normal_(self.word_embedding.weight, mean=0, std=1/(embedding_size ** -0.5))
-        # self.scale = math.sqrt(embedding_size)
+        t.nn.init.xavier_normal_(self.word_embedding.weight)
+        # t.nn.init.normal_(self.word_embedding.weight, mean=0, std=1/(embedding_size ** -0.5))
+        if scale_word_embedding:
+            self.scale = math.sqrt(embedding_size)
+        else:
+            self.scale = 1
 
     def forward(self, word_id):
-        embedding = self.word_embedding(word_id)
+        embedding = self.word_embedding(word_id) * self.scale
         embedding = self.position_embedding(embedding)
         return embedding
 

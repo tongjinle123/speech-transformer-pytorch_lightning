@@ -30,7 +30,7 @@ class Transformer(t.nn.Module):
         self.token_decoder = TokenDecoder(
             input_size=model_size, feed_forward_size=feed_forward_size, hidden_size=hidden_size, dropout=dropout,
             num_head=num_head, num_layer=num_decoder_layer, vocab_size=self.vocab.vocab_size, padding_idx=self.vocab.pad_id,
-            max_length=max_token_length, share_weight=share_weight
+            max_length=max_token_length, share_weight=share_weight, bos_id=self.vocab.bos_id, eos_id=self.vocab.eos_id
         )
 
         self.label_smoothing_celoss = LabelSmoothingLoss(
@@ -47,6 +47,9 @@ class Transformer(t.nn.Module):
             return feature, feature_length, target, target_length
 
     def _prepare_feature(self, feature, feature_length, restrict_left_length=None, restrict_right_length=None):
+        """
+        do spec augment and build mask
+        """
         if self.enable_spec_augment:
             feature = self.spec_augment(feature, feature_length)
         feature_mask = Masker.get_mask(feature_length)
@@ -56,6 +59,9 @@ class Transformer(t.nn.Module):
         return feature, feature_mask, self_attention_mask
 
     def _prepare_token(self, token, token_length):
+        """
+        build target and mask
+        """
         input_token, output_token, token_length = self._rebuild_target(token, token_length)
         token_mask = Masker.get_mask(token_length)
         token_self_attention_mask = Masker.get_dot_mask(token_mask, token_mask)
@@ -63,6 +69,9 @@ class Transformer(t.nn.Module):
         return input_token.detach(), output_token.detach(), token_length.detach(), token_mask.detach(), token_self_attention_mask.detach()
 
     def _rebuild_target(self, target, target_length):
+        """
+        add eos & bos into original token in a batched tensor way
+        """
         input_ = t.nn.functional.pad(target, (1, 0), value=self.vocab.bos_id)
         target_ = t.nn.functional.pad(target, (0, 1), value=self.vocab.pad_id)
         indices = t.LongTensor([[i, v.item()] for i, v in enumerate(target_length)]).to(target.device)
@@ -70,7 +79,7 @@ class Transformer(t.nn.Module):
         target_ = target_.index_put(tuple(indices.t()), values=values)
         return input_.detach(), target_.detach(), target_length+1
 
-    def forward(self, feature, feature_length, ori_token, ori_token_length):
+    def forward(self, feature, feature_length, ori_token, ori_token_length, cal_ce_loss=True):
         #
         feature, feature_mask, feature_self_attention_mask = self._prepare_feature(
             feature, feature_length, restrict_left_length=20, restrict_right_length=20)
@@ -84,10 +93,11 @@ class Transformer(t.nn.Module):
         #
         output = self.token_decoder(
             input_token, spec_feature, token_mask, token_self_attention_mask, feature_mask.unsqueeze(1).bool())
-        # output = self.token_decoder(
-        #     input_token, spec_feature, token_mask, None, None)
-
-        return output, output_token, spec_output, feature_length, ori_token, ori_token_length
+        if cal_ce_loss:
+            ce_loss = self.cal_ce_loss(output, output_token, type='lbce')
+        else:
+            ce_loss = None
+        return output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss
 
     def cal_ce_loss(self, decoder_output, output_token, type='ce'):
         if type == 'lbce':
@@ -103,30 +113,21 @@ class Transformer(t.nn.Module):
             prob.transpose(0, 1), token, feature_length, token_length, blank=self.vocab.blank_id, zero_infinity=True)
         return ctc_loss
 
-    def greedy_decode(self, feature, feature_length):
-        with t.no_grad():
-            feature, feature_mask, feature_self_attention_mask = self._prepare_feature(feature, feature_length)
-            feature = self.input_linear(feature)
-            spec_feature = self.spec_encoder(feature, feature_mask, feature_self_attention_mask)
+    def inference(self, feature, feature_length, decode_type='greedy'):
+        feature, feature_mask, feature_self_attention_mask = self._prepare_feature(
+            feature, feature_length, restrict_left_length=20, restrict_right_length=20)
+        spec_feature = self.spec_encoder(feature, feature_mask, feature_self_attention_mask)
+        if decode_type == 'greedy':
+            decoded_token = self.token_decoder.greedy_decode(
+                encoder_output=spec_feature, dot_attention_mask=feature_mask.unsqueeze(1).bool())
+            decoded_string = [self.vocab.id2string(i.tolist()) for i in decoded_token]
+            return decoded_string
+        else:
+            pass
 
-            batch_size = feature.size(0)
-            device = feature.device
-            input_token = t.full((batch_size, 1), self.vocab.bos_id, dtype=t.long, device=device)
-            input_length = t.full((batch_size, ), 1, dtype=t.long, device=device)
-            finished_mask = t.full((batch_size,), 0)
-            for i in range(self.max_token_length):
-                token_mask = Masker.get_mask(input_length)
-                token_self_attention_mask = Masker.get_dot_mask(token_mask, token_mask)
-                token_self_attention_mask = Masker.get_forward_mask(token_self_attention_mask)
-                dot_attention_mask = Masker.get_dot_mask(token_mask, feature_mask)
-                output = self.token_decoder(input_token, spec_feature, token_self_attention_mask, dot_attention_mask)
-                lasted_decoded_id = t.argmax(output, -1)[:, -1:]
-                lasted_decoded_id.masked_fill_(finished_mask, 0)
-                is_finished = lasted_decoded_id.eq(self.vocab.eos_id)
-                finished_mask.masked_fill_(is_finished, 1)
-                input_token = t.cat([input_token, lasted_decoded_id], -1)
 
-        return input_token
+
+
 
 
         #

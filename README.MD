@@ -6,6 +6,7 @@ pytorch_lightning, experiments can be carried out in an easy way.
 I will try to code in a clean style, with well named functions and 
 class and designed file tree, for new guys to understand easily.
 And i will try to make evey calculation in a batched and cleaned way.
+(such as add bos & eos into batched target and spec augment)
 Any ideas can be put into the issues, and welcome for discussion. 
 (This project is still being building and reorganizing)
 
@@ -49,4 +50,5 @@ reference:
     https://github.com/alphadl/lookahead.pytorch
     https://github.com/LiyuanLucasLiu/RAdam
     https://github.com/vahidk/tfrecord
+    https://github.com/kaituoxu/Speech-Transformer
     

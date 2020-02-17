@@ -16,7 +16,7 @@ def get_args():
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument('--nb_gpu_nodes', type=int, default=1)
     parent_parser.add_argument('-seed', default=1, type=int)
-    parent_parser.add_argument('-epochs', default=1000, type=int)
+    parent_parser.add_argument('-epochs', default=200, type=int)
     parser = LightningModel.add_model_specific_args(parent_parser)
     return parser.parse_args()
 
@@ -31,14 +31,15 @@ def main(hparams):
     exp_root = 'exp'
     log_folder = 'lightning_logs'
     log_root = os.path.join(exp_root, log_folder)
-    logger = TestTubeLogger(exp_root, name=log_folder)
-    # checkpoint = ModelCheckpoint(filepath='exp/lightning_logs/version_214/checkpoints/',
-    #                              monitor='wer', verbose=1, save_best_only=False)
+    logger = TestTubeLogger(exp_root, name=log_folder, version=1000)
+    checkpoint = ModelCheckpoint(filepath='exp/lightning_logs/version_1000/checkpoints/',
+                                 monitor='wer', verbose=1, save_best_only=False)
     trainer = Trainer(
         logger=logger,
-        # checkpoint_callback=checkpoint,
+        checkpoint_callback=checkpoint,
         # fast_dev_run=True,
         # overfit_pct=0.03,
+        # profiler=True,
         default_save_path='exp/',
         val_check_interval=1.0,
         log_save_interval=50000,
@@ -48,8 +49,8 @@ def main(hparams):
         max_nb_epochs=hparams.epochs,
         gradient_clip_val=5.0,
         min_nb_epochs=3000,
-        # use_amp=True,
-        # amp_level='O2',
+        use_amp=True,
+        amp_level='O0',
         nb_sanity_val_steps=0
     )
     # if hparams.evaluate:
