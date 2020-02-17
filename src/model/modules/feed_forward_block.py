@@ -22,7 +22,6 @@ class FeedForwardBlock(t.nn.Module):
         net = self.layer_norm(net)
         net = self.linear1(net)
         net = self.gelu(net)
-        # net = t.nn.functional.relu(net)
         net = self.dropout(net)
         net = self.linear2(net)
         net = self.dropout(net)

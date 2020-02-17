@@ -44,8 +44,9 @@ class LightningModel(pl.LightningModule):
 
         return output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss
 
-    def greedy_decode(self, feature, feature_length, ):
-        output = self.transformer.inference(feature, feature_length, decode_type='greedy')
+    def decode(self, feature, feature_length, decode_type='greedy'):
+        assert decode_type in ['greedy', 'beam']
+        output = self.transformer.inference(feature, feature_length, decode_type=decode_type)
         return output
 
     def training_step(self, batch, batch_nb):

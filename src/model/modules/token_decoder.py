@@ -2,6 +2,7 @@ import torch as t
 from src.model.modules.transformer_decoder import TransformerDecoder
 from src.model.modules.embedding import Embedding
 from src.utils.masker import Masker
+from src.model.modules.beam_searcher import BeamSteper
 
 
 class TokenDecoder(t.nn.Module):
@@ -14,6 +15,7 @@ class TokenDecoder(t.nn.Module):
         self.max_length = max_length
         self.bos_id = bos_id
         self.eos_id = eos_id
+        self.vocab_size = vocab_size
         self.embedding = Embedding(vocab_size, input_size, padding_idx, max_length, scale_word_embedding=share_weight)
         self.transformer_decoder = TransformerDecoder(input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer)
         self.layer_norm = t.nn.LayerNorm(input_size, eps=1/(input_size ** -0.5))
@@ -31,29 +33,33 @@ class TokenDecoder(t.nn.Module):
         net = self.output_layer(net)
         return net
 
-
     def beam_search_decode(self, encoder_output, dot_attention_mask, beam_size):
         batch_size = encoder_output.size(0)
         device = encoder_output.device
-        token_id = t.full((batch_size, 1), fill_value=self.bos_id, dtype=t.long, device=device)
-        length = t.LongTensor([1] * batch_size, device=device)
-        #         length = t.full((batch_size), fill_value=1, dtype=t.long, device=device)
-        probs = t.Tensor().to(device)
-        # count = 0
+        feature_length = encoder_output.size(1)
+
+        self.beam_steper = BeamSteper(
+            batch_size, beam_size, self.bos_id, self.eos_id, self.vocab_size, device)
+        encoder_output = encoder_output.unsqueeze(1).repeat(1, beam_size, 1, 1).view(
+            batch_size*beam_size, feature_length, -1)
+        dot_attention_mask = dot_attention_mask.unsqueeze(1).repeat(1, beam_size, 1, 1).view(
+            batch_size * beam_size, 1, feature_length
+        )
         with t.no_grad():
             for i in range(self.max_length):
                 try:
+                    length = self.beam_steper.length_container
                     token_mask = Masker.get_mask(length)
                     self_attention_mask = Masker.get_dot_mask(token_mask, token_mask)
-                    last_prob, last_token_id = self.decode_step(
+
+                    token_id = self.beam_steper.get_first_step_token() if i == 0 else self.beam_steper.token_container.view(batch_size * beam_size, -1)
+                    last_prob = self.beam_decode_step(
                         token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask,
                         topk=beam_size, return_last=True)
-
-
-
+                    self.beam_steper.step(last_prob)
                 except:
                     break
-        return None
+        return self.beam_steper.token_container
 
 
     def greedy_decode(self, encoder_output, dot_attention_mask):
@@ -63,10 +69,8 @@ class TokenDecoder(t.nn.Module):
         batch_size = encoder_output.size(0)
         device = encoder_output.device
         token_id = t.full((batch_size, 1), fill_value=self.bos_id, dtype=t.long, device=device)
-        length = t.LongTensor([1] * batch_size, device=device)
-        #         length = t.full((batch_size), fill_value=1, dtype=t.long, device=device)
+        length = t.LongTensor([1] * batch_size).to(device)
         probs = t.Tensor().to(device)
-        # count = 0
         with t.no_grad():
             for i in range(self.max_length):
                 try:
@@ -84,14 +88,15 @@ class TokenDecoder(t.nn.Module):
                 except:
                     #TODO: to be more consious
                     break
-
-                # print('length',length)
-                # count += 1
-                # if count ==4:
-                #     break
         return token_id
 
         # B, 1
+
+    def beam_decode_step(self, token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask, topk=1,
+                    return_last=True):
+        net = self.forward(token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask)
+        net = t.nn.functional.log_softmax(net, -1)
+        return net[:, -1:, :]
 
     def decode_step(self, token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask, topk=1,
                     return_last=True):

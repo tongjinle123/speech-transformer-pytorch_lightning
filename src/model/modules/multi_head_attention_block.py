@@ -31,12 +31,12 @@ class MultiHeadAttention(t.nn.Module):
         self.output_dim = input_size
         self.key_projection = t.nn.Linear(input_size, self.num_head * self.hidden_size)
         self.query_projection = t.nn.Linear(input_size, self.num_head * self.hidden_size)
-        self.value_projection = t.nn.Linear(input_size, self.num_head * self.hidden_size)
+        # self.value_projection = t.nn.Linear(input_size, self.num_head * self.hidden_size)
         t.nn.init.xavier_normal_(self.key_projection.weight)
         t.nn.init.xavier_normal_(self.query_projection.weight)
-        t.nn.init.xavier_normal_(self.value_projection.weight)
+        # t.nn.init.xavier_normal_(self.value_projection.weight)
         self.scale = np.sqrt(self.hidden_size)
-        self.linear = t.nn.Linear(self.num_head * self.hidden_size, input_size, bias=False)
+        self.linear = t.nn.Linear(self.num_head * self.hidden_size, input_size)
         t.nn.init.xavier_normal_(self.linear.weight)
 
     def forward(self, query, key, value, attention_mask=None):
@@ -47,9 +47,9 @@ class MultiHeadAttention(t.nn.Module):
         # B, N, QL, H
         key_projection = self.key_projection(key).view(batch_size, key_lenth, self.num_head, self.hidden_size).permute(0, 2, 3, 1)
         # B, N, H, KL
-        value_projection = self.value_projection(value).view(batch_size, key_lenth, self.num_head, self.hidden_size).permute(0, 2, 3, 1)
+        # value_projection = self.value_projection(value).view(batch_size, key_lenth, self.num_head, self.hidden_size).permute(0, 2, 3, 1)
         # B, N, KL, H
-        attention_matrix = (query_projection @ value_projection) / self.scale
+        attention_matrix = (query_projection @ key_projection) / self.scale
         # B, N, QL, KL
 
         if attention_mask is not None:

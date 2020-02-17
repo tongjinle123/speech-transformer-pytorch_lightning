@@ -1,6 +1,7 @@
 from pytorch_lightning.trainer.trainer import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.logging import TestTubeLogger
+from pytorch_lightning.callbacks import EarlyStopping
 from src.model.transformer.lightning_model_2 import LightningModel
 import torch.backends.cudnn as cudnn
 import random
@@ -36,6 +37,7 @@ def main(hparams):
     #                              monitor='wer', verbose=1, save_best_only=False)
     trainer = Trainer(
         logger=logger,
+        early_stop_callback=False,
         # checkpoint_callback=checkpoint,
         # fast_dev_run=True,
         # overfit_pct=0.03,

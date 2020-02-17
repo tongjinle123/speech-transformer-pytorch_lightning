@@ -15,10 +15,10 @@ class BeamSteper:
         self.prob_container = t.zeros((self.batch_size, self.beam_size, 1), device=self.device)
         self.token_container = t.ones((self.batch_size, self.beam_size, 1), device=self.device,
                                       dtype=t.long) * self.bos_id
-        self.length_container = t.LongTensor([1] * self.batch_size, device=self.device)
+        self.length_container = t.ones((self.batch_size * self.beam_size), dtype=t.long, device=self.device)
 
     def get_first_step_token(self):
-        return t.ones((self.batch_size * self.beam_size, 1), dtype=t.long)
+        return t.ones((self.batch_size * self.beam_size, 1), dtype=t.long, device=self.device)
 
     def step(self, step_prob):
         # step_prob [batch_size*beam_size, 1, vocab_size]
@@ -61,5 +61,11 @@ class BeamSteper:
         self.prob_container = t.index_select(self.prob_container, 0,
                                              index.squeeze(1).view(self.batch_size * self.beam_size))
         self.prob_container = self.prob_container.view(self.batch_size, self.beam_size, 1)
-        return self.token_container, self.prob_container
+        for i, v in enumerate(self.token_container):
+
+            if v[-1] != self.eos_id:
+                self.length_container[i] += 1
+
+        # TODO not usable
+       # return self.token_container, self.length_container
 

@@ -21,6 +21,7 @@ class SpecEncoder(t.nn.Module):
         # net b,l,h
         # input_mask b, l
         net, input_mask = self.input_layer(net, input_mask)
+        net.masked_fill_(input_mask.unsqueeze(-1)==0, 0.0)
         net = self.transformer_encoder(net, input_mask.unsqueeze(-1), self_attention_mask)
         net = self.layer_norm(net)
         return net

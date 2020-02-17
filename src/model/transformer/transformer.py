@@ -122,7 +122,9 @@ class Transformer(t.nn.Module):
                 encoder_output=spec_feature, dot_attention_mask=feature_mask.unsqueeze(1).bool())
             decoded_string = [self.vocab.id2string(i.tolist()) for i in decoded_token]
             return decoded_string
-        else:
-            pass
 
-
+        elif decode_type == 'beam':
+            decoded_token = self.token_decoder.beam_search_decode(
+                encoder_output=spec_feature, dot_attention_mask=feature_mask.unsqueeze(1).bool(), beam_size=5)
+            decoded_string = [self.vocab.id2string(i.tolist()) for i in decoded_token]
+            return decoded_string
