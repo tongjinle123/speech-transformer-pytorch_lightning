@@ -16,7 +16,7 @@ class Vocab:
 
     def str2token(self, string):
         string = string.replace('-', ' ').replace('  ', '')
-        # string = re.sub(self.pattern, '', string)
+        string = re.sub(self.pattern, '', string)
         output = self.spm.encode_as_pieces(string)
         if output[0] != '▁':
             return output
@@ -25,7 +25,7 @@ class Vocab:
 
     def str2id(self, string):
         string = string.replace('-', ' ').replace('  ', '')
-        # string = re.sub(self.pattern, '', string)
+        string = re.sub(self.pattern, '', string)
         output = self.spm.encode_as_ids(string)
         if output[0] != self.token2id('▁'):
             return output

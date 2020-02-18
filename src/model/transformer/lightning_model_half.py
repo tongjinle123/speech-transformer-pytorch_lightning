@@ -44,19 +44,22 @@ class LightningModel(pl.LightningModule):
 
         return output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss
 
-    def greedy_decode(self, feature, feature_length, ):
-        output = self.transformer.inference(feature, feature_length, decode_type='greedy')
+    def decode(self, feature, feature_length, decode_type='greedy'):
+        assert decode_type in ['greedy', 'beam']
+        output = self.transformer.inference(feature, feature_length, decode_type=decode_type)
         return output
 
     def training_step(self, batch, batch_nb):
         feature, feature_length, target, target_length = batch[0], batch[1], batch[2], batch[3]
         model_output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss = self.forward(
             feature, feature_length, target, target_length, True)
-        loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
-        # loss = self.hparams.loss_lambda * ce_loss + (1 - self.hparams.loss_lambda) * ctc_loss
-        tqdm_dict = {'loss': ce_loss, 'lr': self.lr}
+        ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
+        loss = self.hparams.loss_lambda * ce_loss + (1 - self.hparams.loss_lambda) * ctc_loss
+        tqdm_dict = {'loss': loss, 'ce_loss': ce_loss, 'ctc_loss': ctc_loss, 'lr': self.lr}
         output = OrderedDict({
             'loss': loss,
+            'ce_loss': ce_loss,
+            'ctc_loss': ctc_loss,
             'progress_bar': tqdm_dict,
             'log': tqdm_dict
         })
@@ -66,20 +69,25 @@ class LightningModel(pl.LightningModule):
         feature, feature_length, target, target_length = batch[0], batch[1], batch[2], batch[3]
         model_output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss = self.forward(
             feature, feature_length, target, target_length, True)
-        loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
-        # loss = self.hparams.loss_lambda * ce_loss + (1 - self.hparams.loss_lambda) * ctc_loss
-        tqdm_dict = {'loss': ce_loss, 'lr': self.lr}
+        ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
+        loss = self.hparams.loss_lambda * ce_loss + (1 - self.hparams.loss_lambda) * ctc_loss
+        tqdm_dict = {'loss': loss, 'ce_loss': ce_loss, 'ctc_loss': ctc_loss, 'lr': self.lr}
         output = OrderedDict({
             'loss': loss,
+            'ce_loss': ce_loss,
+            'ctc_loss': ctc_loss,
             'progress_bar': tqdm_dict,
             'log': tqdm_dict
         })
         return output
+
     def validation_end(self, outputs):
         val_loss = t.stack([i['loss'] for i in outputs]).mean()
-
+        ce_loss = t.stack([i['ce_loss'] for i in outputs]).mean()
+        ctc_loss = t.stack([i['ctc_loss'] for i in outputs]).mean()
         print(val_loss.item())
-
+        print(ce_loss.item())
+        print(ctc_loss.item())
         return {'val_loss': val_loss, 'log': {'val_loss': val_loss}}
 
     @pl.data_loader
@@ -98,7 +106,7 @@ class LightningModel(pl.LightningModule):
         # )
         dataloader = build_raw_data_loader(
             [
-                'data/filterd_manifest/ce_200.csv',
+                # 'data/filterd_manifest/ce_200.csv',
                 'data/filterd_manifest/c_500_train.csv',
                 # 'data/filterd_manifest/aidatatang_200zh_train.csv',
                 # 'data/filterd_manifest/data_aishell_train.csv',
@@ -132,8 +140,8 @@ class LightningModel(pl.LightningModule):
         # )
         dataloader = build_raw_data_loader(
             [
-                'data/manifest/ce_20_dev_small.csv',
-                'data/filterd_manifest/c_500_test_small.csv',
+                # 'data/manifest/ce_20_dev.csv',
+                'data/filterd_manifest/c_500_test.csv',
                 # 'data/manifest/ce_20_dev_small.csv',
                 # 'aishell2_testing/manifest1.csv',
                 # 'data/filterd_manifest/data_aishell_test.csv'
@@ -157,7 +165,7 @@ class LightningModel(pl.LightningModule):
         optimizer.zero_grad()
 
     def configure_optimizers(self):
-        optimizer = AdamW(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.997), eps=1e-4)
+        optimizer = AdamW(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.997))
         optimizer = Lookahead(optimizer)
         return optimizer
 
@@ -177,15 +185,15 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--num_encoder_layer', default=6, type=int)
         parser.add_argument('--num_decoder_layer', default=6, type=int)
         parser.add_argument('--vocab_path', default='testing_vocab_2.model', type=str)
-        parser.add_argument('--max_feature_length', default=2048, type=int)
+        parser.add_argument('--max_feature_length', default=1024, type=int)
         parser.add_argument('--max_token_length', default=50, type=int)
         parser.add_argument('--share_weight', default=True, type=bool)
-        parser.add_argument('--loss_lambda', default=1, type=float)
+        parser.add_argument('--loss_lambda', default=0.7, type=float)
         parser.add_argument('--smoothing', default=0.1, type=float)
 
         parser.add_argument('--lr', default=3e-4, type=float)
         parser.add_argument('--warm_up_step', default=16000, type=int)
-        parser.add_argument('--factor', default=0.01, type=int)
+        parser.add_argument('--factor', default=1, type=int)
         parser.add_argument('--enable_spec_augment', default=True, type=bool)
 
         parser.add_argument('--train_batch_size', default=32, type=int)

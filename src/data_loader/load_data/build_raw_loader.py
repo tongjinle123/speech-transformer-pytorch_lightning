@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_sequence
 
 
 class AudioSet(Dataset):
-    def __init__(self, manifest_files, max_duration=12, min_duration=1,
+    def __init__(self, manifest_files, max_duration=10, min_duration=1,
                  vocab_path='testing_vocab.model', speed_perturb=False):
         super(AudioSet, self).__init__()
         self.manifest_files = manifest_files

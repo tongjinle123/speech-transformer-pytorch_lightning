@@ -165,17 +165,17 @@ class LightningModel(pl.LightningModule):
         optimizer.zero_grad()
 
     def configure_optimizers(self):
-        optimizer = AdamW(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.997), eps=1e-4)
+        optimizer = AdamW(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.997))
         optimizer = Lookahead(optimizer)
         return optimizer
 
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = HyperOptArgumentParser(parents=[parent_parser])
-        parser.add_argument('--num_freq_mask', default=1, type=int)
+        parser.add_argument('--num_freq_mask', default=2, type=int)
         parser.add_argument('--num_time_mask', default=1, type=int)
-        parser.add_argument('--freq_mask_length', default=30, type=int)
-        parser.add_argument('--time_mask_length', default=20, type=int)
+        parser.add_argument('--freq_mask_length', default=20, type=int)
+        parser.add_argument('--time_mask_length', default=10, type=int)
         parser.add_argument('--feature_dim', default=320, type=int)
         parser.add_argument('--model_size', default=512, type=int)
         parser.add_argument('--feed_forward_size', default=2048, type=int)
@@ -193,7 +193,7 @@ class LightningModel(pl.LightningModule):
 
         parser.add_argument('--lr', default=3e-4, type=float)
         parser.add_argument('--warm_up_step', default=16000, type=int)
-        parser.add_argument('--factor', default=0.01, type=int)
+        parser.add_argument('--factor', default=1, type=int)
         parser.add_argument('--enable_spec_augment', default=True, type=bool)
 
         parser.add_argument('--train_batch_size', default=32, type=int)

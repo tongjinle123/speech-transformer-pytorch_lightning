@@ -70,7 +70,7 @@ class TokenDecoder(t.nn.Module):
         device = encoder_output.device
         token_id = t.full((batch_size, 1), fill_value=self.bos_id, dtype=t.long, device=device)
         length = t.LongTensor([1] * batch_size).to(device)
-        probs = t.Tensor().to(device)
+        #probs = t.Tensor().to(device)
         with t.no_grad():
             for i in range(self.max_length):
                 try:
@@ -81,7 +81,7 @@ class TokenDecoder(t.nn.Module):
                         topk=1, return_last=True)
                     token_id = t.cat([token_id, last_token_id], dim=1)
                     # print('concate, tokenid', token_id)
-                    probs = t.cat([probs, last_prob], dim=1)
+                    #probs = t.cat([probs, last_prob], dim=1)
                     for index, id in enumerate(last_token_id.squeeze(1)):
                         if id != self.eos_id:
                             length[index] += 1

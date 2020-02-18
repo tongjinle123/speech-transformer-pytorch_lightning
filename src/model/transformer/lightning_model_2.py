@@ -44,8 +44,9 @@ class LightningModel(pl.LightningModule):
 
         return output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss
 
-    def greedy_decode(self, feature, feature_length, ):
-        output = self.transformer.inference(feature, feature_length, decode_type='greedy')
+    def decode(self, feature, feature_length, decode_type='greedy'):
+        assert decode_type in ['greedy', 'beam']
+        output = self.transformer.inference(feature, feature_length, decode_type=decode_type)
         return output
 
     def training_step(self, batch, batch_nb):
@@ -54,7 +55,7 @@ class LightningModel(pl.LightningModule):
             feature, feature_length, target, target_length, True)
         ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
         loss = self.hparams.loss_lambda * ce_loss + (1 - self.hparams.loss_lambda) * ctc_loss
-        tqdm_dict = {'loss': ce_loss, 'ce_loss': ce_loss, 'ctc_loss': ctc_loss, 'lr': self.lr}
+        tqdm_dict = {'loss': loss, 'ce_loss': ce_loss, 'ctc_loss': ctc_loss, 'lr': self.lr}
         output = OrderedDict({
             'loss': loss,
             'ce_loss': ce_loss,
@@ -70,7 +71,7 @@ class LightningModel(pl.LightningModule):
             feature, feature_length, target, target_length, True)
         ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
         loss = self.hparams.loss_lambda * ce_loss + (1 - self.hparams.loss_lambda) * ctc_loss
-        tqdm_dict = {'loss': ce_loss, 'ce_loss': ce_loss, 'ctc_loss': ctc_loss, 'lr': self.lr}
+        tqdm_dict = {'loss': loss, 'ce_loss': ce_loss, 'ctc_loss': ctc_loss, 'lr': self.lr}
         output = OrderedDict({
             'loss': loss,
             'ce_loss': ce_loss,

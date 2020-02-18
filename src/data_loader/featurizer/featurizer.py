@@ -23,7 +23,7 @@ class Featurizer:
     def __call__(self, file, target=None):
         sig = load(file, do_vad=True)
         if self.speed_perturb:
-            sig = speed_perturb(sig, 90, 110, 2)
+            sig = speed_perturb(sig, 90, 110, 4)
         feature = self.fbank(sig)
         feature = normalization(feature)
         feature = concat_and_subsample(feature.numpy())
