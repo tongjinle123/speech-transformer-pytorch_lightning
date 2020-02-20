@@ -76,6 +76,8 @@ class LightningModel(pl.LightningModule):
             feature, feature_length, target, target_length, True)
         result_string_list = [' '.join(tokenize(i)) for i in self.transformer.inference(feature, feature_length)]
         target_string_list = [' '.join(tokenize(self.transformer.vocab.id2string(i.tolist()))) for i in output_token]
+        print(result_string_list[0])
+        print(target_string_list[0])
         mers = [cal_wer(i[0], i[1]) for i in zip(target_string_list, result_string_list)]
         mer = np.mean(mers)
         ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
