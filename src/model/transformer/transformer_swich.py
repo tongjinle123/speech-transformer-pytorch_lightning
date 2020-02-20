@@ -32,7 +32,7 @@ class TransformerSwitch(t.nn.Module):
             num_head=num_head, num_layer=num_decoder_layer, vocab_size=self.vocab.vocab_size, padding_idx=self.vocab.pad_id,
             max_length=max_token_length, share_weight=share_weight, bos_id=self.vocab.bos_id, eos_id=self.vocab.eos_id
         )
-        self.switch_loss = t.nn.BCEWithLogitsLoss()
+        self.switch_loss = LabelSmoothingLoss(size=4, smoothing=0, padding_idx=0)
         self.label_smoothing_celoss = LabelSmoothingLoss(
             self.vocab.vocab_size, smoothing=smoothing, padding_idx=self.vocab.pad_id)
 
@@ -66,8 +66,12 @@ class TransformerSwitch(t.nn.Module):
         token_mask = Masker.get_mask(token_length)
         token_self_attention_mask = Masker.get_dot_mask(token_mask, token_mask)
         token_self_attention_mask = Masker.get_forward_mask(token_self_attention_mask)
-        swich = (output_token.ge(12) & output_token.le(4211)).float()
-        return input_token.detach(), output_token.detach(), token_length.detach(), token_mask.detach(), token_self_attention_mask.detach(), swich.detach()
+
+        switch = t.ones_like(output_token, device=token.device).long() #eng = 1
+        switch.masked_fill_(output_token.eq(0), 0) # pad=0
+        switch.masked_fill_((output_token.ge(12) & output_token.le(4211)), 2) #ch = 2
+        switch.masked_fill_((output_token.ge(1) & output_token.le(10)), 3) # other = 3
+        return input_token.detach(), output_token.detach(), token_length.detach(), token_mask.detach(), token_self_attention_mask.detach(), switch.detach()
 
     def _rebuild_target(self, target, target_length):
         """

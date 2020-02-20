@@ -23,10 +23,10 @@ class Featurizer:
     def __call__(self, file, target=None):
         sig = load(file, do_vad=True)
         if self.speed_perturb:
-            sig = speed_perturb(sig, 90, 110, 4)
+            sig = speed_perturb(sig, 80, 120, 4)
         feature = self.fbank(sig)
         feature = normalization(feature)
-        feature = concat_and_subsample(feature.numpy())
+        feature = concat_and_subsample(feature.numpy(), left_frames=4, skip_frames=3)
         feature_length = len(feature)
         if not self.vocab is None:
             target_id = self.vocab.str2id(target)

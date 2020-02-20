@@ -7,6 +7,10 @@ from src.data_loader.load_data.build_raw_loader import build_raw_data_loader
 from src.model.transformer.transformer_swich import TransformerSwitch
 from src.utils.radam import AdamW, RAdam
 from src.utils.lookahead import Lookahead
+from src.utils.score import cal_wer
+from src.utils.tokenizer import tokenize
+import numpy as np
+
 
 
 class LightningModel(pl.LightningModule):
@@ -70,15 +74,19 @@ class LightningModel(pl.LightningModule):
         feature, feature_length, target, target_length = batch[0], batch[1], batch[2], batch[3]
         model_output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss = self.forward(
             feature, feature_length, target, target_length, True)
-        result = self.transformer.inference(feature, feature_length)
+        result_string_list = [' '.join(tokenize(i)) for i in self.transformer.inference(feature, feature_length)]
+        target_string_list = [' '.join(tokenize(self.transformer.vocab.id2string(i.tolist()))) for i in output_token]
+        mers = [cal_wer(i[0], i[1]) for i in zip(target_string_list, result_string_list)]
+        mer = np.mean(mers)
         ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
         loss = self.hparams.loss_lambda * ce_loss + (1 - self.hparams.loss_lambda) * ctc_loss + switch_loss * 10
-        tqdm_dict = {'loss': loss, 'ce_loss': ce_loss, 'ctc_loss': ctc_loss, 'switch_loss': switch_loss, 'lr': self.lr}
+        tqdm_dict = {'loss': loss, 'ce': ce_loss, 'ctc': ctc_loss, 'switch': switch_loss, 'mer': mer, 'lr': self.lr}
         output = OrderedDict({
             'loss': loss,
             'ce_loss': ce_loss,
             'ctc_loss': ctc_loss,
             'switch_loss': switch_loss,
+            'mer': mer,
             'progress_bar': tqdm_dict,
             'log': tqdm_dict
         })
@@ -89,10 +97,12 @@ class LightningModel(pl.LightningModule):
         ce_loss = t.stack([i['ce_loss'] for i in outputs]).mean()
         ctc_loss = t.stack([i['ctc_loss'] for i in outputs]).mean()
         switch_loss = t.stack([i['switch_loss'] for i in outputs]).mean()
+        mer = np.mean([i['mer'] for i in outputs])
         print(val_loss.item())
         print(ce_loss.item())
         print(ctc_loss.item())
         print(switch_loss.item())
+        print(mer)
         return {'val_loss': val_loss, 'log': {'val_loss': val_loss}}
 
     @pl.data_loader
@@ -111,8 +121,8 @@ class LightningModel(pl.LightningModule):
         # )
         dataloader = build_raw_data_loader(
             [
-                'data/filterd_manifest/ce_200.csv',
-                # 'data/filterd_manifest/c_500_train.csv',
+                # 'data/filterd_manifest/ce_200.csv',
+                'data/filterd_manifest/c_500_train.csv',
                 # 'data/filterd_manifest/aidatatang_200zh_train.csv',
                 # 'data/filterd_manifest/data_aishell_train.csv',
                 # 'data/filterd_manifest/AISHELL-2.csv',
@@ -145,8 +155,8 @@ class LightningModel(pl.LightningModule):
         # )
         dataloader = build_raw_data_loader(
             [
-                'data/manifest/ce_20_dev.csv',
-                # 'data/filterd_manifest/c_500_test.csv',
+                # 'data/manifest/ce_20_dev.csv',
+                'data/filterd_manifest/c_500_test.csv',
                 # 'data/manifest/ce_20_dev_small.csv',
                 # 'aishell2_testing/manifest1.csv',
                 # 'data/filterd_manifest/data_aishell_test.csv'
@@ -181,7 +191,7 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--num_time_mask', default=2, type=int)
         parser.add_argument('--freq_mask_length', default=30, type=int)
         parser.add_argument('--time_mask_length', default=20, type=int)
-        parser.add_argument('--feature_dim', default=320, type=int)
+        parser.add_argument('--feature_dim', default=400, type=int)
         parser.add_argument('--model_size', default=512, type=int)
         parser.add_argument('--feed_forward_size', default=2048, type=int)
         parser.add_argument('--hidden_size', default=64, type=int)
@@ -198,7 +208,7 @@ class LightningModel(pl.LightningModule):
 
         parser.add_argument('--lr', default=3e-4, type=float)
         parser.add_argument('--warm_up_step', default=16000, type=int)
-        parser.add_argument('--factor', default=0.01, type=int)
+        parser.add_argument('--factor', default=1, type=int)
         parser.add_argument('--enable_spec_augment', default=True, type=bool)
 
         parser.add_argument('--train_batch_size', default=32, type=int)

@@ -30,8 +30,8 @@ def main(hparams):
     exp_root = 'exp'
     log_folder = 'lightning_logs'
     log_root = os.path.join(exp_root, log_folder)
-    logger = TestTubeLogger(exp_root, name=log_folder, version=1004)
-    checkpoint = ModelCheckpoint(filepath='exp/lightning_logs/version_1004/checkpoints/',
+    logger = TestTubeLogger(exp_root, name=log_folder, version=1005)
+    checkpoint = ModelCheckpoint(filepath='exp/lightning_logs/version_1005/checkpoints/',
                                  monitor='val_ce_loss', verbose=1, save_top_k=-1)
     trainer = Trainer(
         logger=logger,

@@ -20,7 +20,7 @@ class TokenDecoder(t.nn.Module):
         self.transformer_decoder = TransformerDecoder(input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer)
         self.layer_norm = t.nn.LayerNorm(input_size, eps=1/(input_size ** -0.5))
         self.output_layer = t.nn.Linear(input_size, vocab_size, bias=False)
-        self.switch_layer = t.nn.Linear(input_size, 1, bias=False)
+        self.switch_layer = t.nn.Linear(input_size, 4, bias=False)
         t.nn.init.xavier_normal_(self.switch_layer.weight)
         if share_weight:
             self.output_layer.weight = self.embedding.word_embedding.weight
@@ -32,7 +32,7 @@ class TokenDecoder(t.nn.Module):
         net.masked_fill_(token_mask.unsqueeze(-1) == 0, 0.0)
         net = self.transformer_decoder(net, token_mask.unsqueeze(-1), encoder_output, self_attention_mask, dot_attention_mask)
         net = self.layer_norm(net)
-        swich = self.switch_layer(net).squeeze(-1)
+        swich = self.switch_layer(net)
         net = self.output_layer(net)
         return net, swich
 
