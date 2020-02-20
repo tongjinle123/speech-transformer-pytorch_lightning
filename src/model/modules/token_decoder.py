@@ -59,7 +59,7 @@ class TokenDecoder(t.nn.Module):
                     self.beam_steper.step(last_prob)
                 except:
                     break
-        return self.beam_steper.token_container
+        return self.beam_steper.batch_best_saver
 
 
     def greedy_decode(self, encoder_output, dot_attention_mask):

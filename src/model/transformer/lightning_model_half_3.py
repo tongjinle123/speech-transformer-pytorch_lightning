@@ -70,8 +70,9 @@ class LightningModel(pl.LightningModule):
         feature, feature_length, target, target_length = batch[0], batch[1], batch[2], batch[3]
         model_output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss = self.forward(
             feature, feature_length, target, target_length, True)
+        result = self.transformer.inference(feature, feature_length)
         ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
-        loss = self.hparams.loss_lambda * ce_loss + (1 - self.hparams.loss_lambda) * ctc_loss + switch_loss / 2
+        loss = self.hparams.loss_lambda * ce_loss + (1 - self.hparams.loss_lambda) * ctc_loss + switch_loss * 10
         tqdm_dict = {'loss': loss, 'ce_loss': ce_loss, 'ctc_loss': ctc_loss, 'switch_loss': switch_loss, 'lr': self.lr}
         output = OrderedDict({
             'loss': loss,
@@ -176,8 +177,8 @@ class LightningModel(pl.LightningModule):
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = HyperOptArgumentParser(parents=[parent_parser])
-        parser.add_argument('--num_freq_mask', default=1, type=int)
-        parser.add_argument('--num_time_mask', default=1, type=int)
+        parser.add_argument('--num_freq_mask', default=2, type=int)
+        parser.add_argument('--num_time_mask', default=2, type=int)
         parser.add_argument('--freq_mask_length', default=30, type=int)
         parser.add_argument('--time_mask_length', default=20, type=int)
         parser.add_argument('--feature_dim', default=320, type=int)
@@ -192,12 +193,12 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--max_feature_length', default=1024, type=int)
         parser.add_argument('--max_token_length', default=50, type=int)
         parser.add_argument('--share_weight', default=True, type=bool)
-        parser.add_argument('--loss_lambda', default=0.7, type=float)
+        parser.add_argument('--loss_lambda', default=0.8, type=float)
         parser.add_argument('--smoothing', default=0.1, type=float)
 
         parser.add_argument('--lr', default=3e-4, type=float)
         parser.add_argument('--warm_up_step', default=16000, type=int)
-        parser.add_argument('--factor', default=0.001, type=int)
+        parser.add_argument('--factor', default=0.01, type=int)
         parser.add_argument('--enable_spec_augment', default=True, type=bool)
 
         parser.add_argument('--train_batch_size', default=32, type=int)
