@@ -95,12 +95,6 @@ class TokenDecoder(t.nn.Module):
 
         # B, 1
 
-    def beam_decode_step(self, token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask, topk=1,
-                    return_last=True):
-        net, _ = self.forward(token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask)
-        net = t.nn.functional.log_softmax(net, -1)
-        return net[:, -1:, :]
-
     def decode_step(self, token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask, topk=1,
                     return_last=True):
         # token_id B, Lt

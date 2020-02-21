@@ -23,7 +23,7 @@ class TokenEncoder(t.nn.Module):
 
     def forward(self, token_id, token_mask, self_attention_mask):
         net = self.embedding(token_id)
-        # net *= token_mask.unsqueeze(-1)
+        net *= token_mask.unsqueeze(-1)
         net = self.transformer_encoder(net, token_mask.unsqueeze(-1), self_attention_mask)
         net = self.layer_norm(net)
         net = self.output_layer(net)

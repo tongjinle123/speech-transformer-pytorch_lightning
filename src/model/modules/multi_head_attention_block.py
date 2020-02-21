@@ -53,10 +53,10 @@ class MultiHeadAttention(t.nn.Module):
         # B, N, QL, KL
 
         if attention_mask is not None:
-            attention_matrix.masked_fill_(~attention_mask.unsqueeze(1), -float('inf'))
+            attention_matrix.masked_fill_(~attention_mask.unsqueeze(1).bool(), -float('inf'))
 
         attention_matrix = F.softmax(attention_matrix, -1)
-        # attention_matrix = attention_matrix.masked_fill(t.isnan(attention_matrix), 0)
+        attention_matrix = attention_matrix.masked_fill(t.isnan(attention_matrix), 0)
         attention_matrix = self.dropout(attention_matrix)
         weighted = attention_matrix @ key_projection.transpose(-1, -2)
         # B, N, QL, KL * B, N, KL, H -> B, N，QL, H
