@@ -22,6 +22,7 @@ highlights:
     lookahead & radam
     fast decoding (TODO)
     dockerfile for quick environment install (to be add)
+    batched beam decode with length penalty
     
 datasets:
     

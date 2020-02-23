@@ -54,40 +54,42 @@ class BeamSteper:
         self.continue_mask = t.ones((self.batch_size, self.beam_size), dtype=t.bool, device=self.device)
 
     def get_first_step_token(self):
-        return t.ones((self.batch_size * self.beam_size, 1), dtype=t.long, device=self.device)
+        return t.ones((self.batch_size, self.beam_size, 1), dtype=t.long, device=self.device)
 
     def step(self, step_prob):
         # step_prob [batch_size, beam_size, vocab_size]
-        if self.continue_mask.sum() == 0:
-            return None
-        else:
-            step_prob, step_prob_indice = t.topk(step_prob, self.beam_size)
-            step_prob.masked_fill_(~self.continue_mask.unsqueeze(-1), -1e10)
 
-            # [batch_size, beam_size, beam_size]
-            self.token_container = self.token_container.unsqueeze(-2).repeat(1, 1, self.beam_size, 1)
-            # [batch_size, beam_size, beam_size, seqlength]
-            self.token_container = t.cat([self.token_container, step_prob_indice.unsqueeze(-1)], dim=-1)
-            # [batch_size, beam_size, beam_size, new_sequlenth]
-            #         return self.prob_container
-            tmp_prob_container = self.prob_container.unsqueeze(-2).repeat(1, 1, self.beam_size, 1)
-            # [batch_size, beam_size, beam_size, seqlength]
-            tmp_prob_container = t.cat([tmp_prob_container, step_prob.unsqueeze(-1)], dim=-1)
-            # batch_size, beam_size, beam_size, seqlength]
-            tmp_prob_container = t.sum(tmp_prob_container[:, :, :, -2:], dim=-1, keepdim=True)
-            #         return tmp_prob_container
-            tmp_prob_container = tmp_prob_container.view(self.batch_size, self.beam_size * self.beam_size)
-            # batch_size, beam_size * beam_size]
-            tmp_prob_container, index = t.topk(tmp_prob_container, self.beam_size)
-            self.prob_container = t.cat([self.prob_container, tmp_prob_container.unsqueeze(-1)], dim=-1)
-            # [batch_size, beam_size]
-            self.token_container = self.token_container.view(self.batch_size, self.beam_size * self.beam_size, -1)
-            self.token_container = [t.index_select(i, 0, v) for i, v in zip(self.token_container, index)]
-            self.token_container = t.stack(self.token_container, 0)
-            # [batch_size, beam_size, seqlength]
-            self.continue_mask.masked_fill_(
-                self.token_container[:, :, -1].eq(self.eos_id),
-                False)
-            self.length_container = self.length_container + self.continue_mask
-            self.batch_best_saver.add(self.token_container, self.prob_container, self.length_container)
-            return self.token_container, self.length_container
+        step_prob, step_prob_indice = t.topk(step_prob, self.beam_size)
+        step_prob.masked_fill_(~self.continue_mask.unsqueeze(-1), -1e10)
+
+        # [batch_size, beam_size, beam_size]
+        self.token_container = self.token_container.unsqueeze(-2).repeat(1, 1, self.beam_size, 1)
+        # [batch_size, beam_size, beam_size, seqlength]
+        self.token_container = t.cat([self.token_container, step_prob_indice.unsqueeze(-1)], dim=-1)
+        # [batch_size, beam_size, beam_size, new_sequlenth]
+        #         return self.prob_container
+        tmp_prob_container = self.prob_container.unsqueeze(-2).repeat(1, 1, self.beam_size, 1)
+        # [batch_size, beam_size, beam_size, seqlength]
+        tmp_prob_container = t.cat([tmp_prob_container, step_prob.unsqueeze(-1)], dim=-1)
+        # batch_size, beam_size, beam_size, seqlength]
+        tmp_prob_container = t.sum(tmp_prob_container[:, :, :, -2:], dim=-1, keepdim=True)
+        #         return tmp_prob_container
+        tmp_prob_container = tmp_prob_container.view(self.batch_size, self.beam_size * self.beam_size)
+        # batch_size, beam_size * beam_size]
+        tmp_prob_container, index = t.topk(tmp_prob_container, self.beam_size)
+        self.prob_container = t.cat([self.prob_container, tmp_prob_container.unsqueeze(-1)], dim=-1)
+        # [batch_size, beam_size]
+        self.token_container = self.token_container.view(self.batch_size, self.beam_size * self.beam_size, -1)
+        self.token_container = [t.index_select(i, 0, v) for i, v in zip(self.token_container, index)]
+        self.token_container = t.stack(self.token_container, 0)
+        # [batch_size, beam_size, seqlength]
+        self.continue_mask.masked_fill_(
+            self.token_container[:, :, -1].eq(self.eos_id),
+            False)
+        self.length_container = self.length_container + self.continue_mask
+        self.batch_best_saver.add(self.token_container, self.prob_container, self.length_container)
+        if self.continue_mask.sum() == 0:
+            return False
+        else:
+            return True
+

@@ -2,29 +2,32 @@ import torch as t
 from src.model.modules.token_encoder import TokenEncoder
 from src.utils.vocab import Vocab
 from src.utils.masker import Masker
+from src.utils.label_smoothing_ce_loss import LabelSmoothingLoss
 
 
 class TransformerLM(t.nn.Module):
-    def __init__(self, input_size=512, feed_forward_size=1024, hidden_size=64, dropout=0.1, num_head=8, num_layer=6, vocab_size=1000,
-                 padding_idx=0, vocab_path='testing_vocab.model', max_length=50, share_weight=True):
+    def __init__(self, embedding_size=512, feed_forward_size=1024, hidden_size=64, dropout=0.1, num_head=8, num_layer=6,
+                 vocab_path='testing_vocab_2.model', max_length=50, share_weight=True):
         super(TransformerLM, self).__init__()
         self.vocab = Vocab(vocab_path)
         self.token_encoder = TokenEncoder(
-            input_size=input_size,
+            input_size=embedding_size,
             feed_forward_size=feed_forward_size,
             hidden_size=hidden_size,
             dropout=dropout,
             num_head=num_head,
             num_layer=num_layer,
-            vocab_size=vocab_size,
-            padding_idx=padding_idx,
             max_length=max_length,
-            share_weight=share_weight
+            share_weight=share_weight,
+            vocab_size=self.vocab.vocab_size,
+            padding_idx=self.vocab.pad_id
         )
+        self.ce_loss = LabelSmoothingLoss(
+            size=self.vocab.vocab_size, smoothing=0.0, padding_idx=self.vocab.pad_id)
 
     def build_sample_data(self, cuda=False):
-        target = t.LongTensor([[1, 2, 3, 4, 5, 6, 7]] * 32)
-        target_length = t.LongTensor([7] * 32)
+        target = t.LongTensor([[1, 2, 3, 4, 5, 6, 7], [1,2,3,4,5,6,0]])
+        target_length = t.LongTensor([7, 6])
         if cuda:
             return target.cuda(), target_length.cuda()
         else:
