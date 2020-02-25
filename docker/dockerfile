@@ -1,0 +1,49 @@
+FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu16.04
+ARG PYTHON_VERSION=3.7
+ARG WITH_TORCHVISION=1
+RUN apt-get update
+RUN apt-get -q -y install openssh-server python-pip python-tk build-essential python-dev libevent-dev python3-dev
+RUN apt-get install -y libsndfile1 gcc make autoconf openssl portaudio19-dev python-all-dev python3-all-dev
+RUN apt-get install -y vim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+         build-essential \
+         cmake \
+         git \
+         curl \
+         ca-certificates \
+         libjpeg-dev \
+         libpng-dev && \
+     rm -rf /var/lib/apt/lists/*
+RUN mkdir /var/run/sshd
+RUN sed "s/without-password/yes/g" /etc/ssh/sshd_config > /etc/ssh/sshd_config2
+RUN cp /etc/ssh/sshd_config2 /etc/ssh/sshd_config
+RUN echo 'root:root' | chpasswd
+RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN curl -o ~/miniconda.sh -O  https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh  && \
+     chmod +x ~/miniconda.sh && \
+     ~/miniconda.sh -b -p /opt/conda && \
+     rm ~/miniconda.sh && \
+     /opt/conda/bin/conda install -y python=$PYTHON_VERSION numpy pyyaml scipy ipython mkl mkl-include ninja cython typing && \
+     /opt/conda/bin/conda clean -ya
+ENV PATH /opt/conda/bin:$PATH
+# This must be done before pip so that requirements.txt is available
+WORKDIR tmp
+COPY pytorch-1.3.0-py3.7_cuda10.1.243_cudnn7.6.3_0.tar.bz2 .
+COPY cudnn-7.6.5-cuda10.1_0.tar.bz2 .
+COPY cudatoolkit-10.1.243-h6bb024c_0.tar.bz2 .
+COPY requirements.txt .
+#COPY tensorflow-2.0.0-cp37-cp37m-manylinux2010_x86_64.whl .
+#COPY ctcdecode ctcdecode
+RUN conda install ./cudnn-7.6.5-cuda10.1_0.tar.bz2
+RUN conda install ./cudatoolkit-10.1.243-h6bb024c_0.tar.bz2
+RUN conda install ./pytorch-1.3.0-py3.7_cuda10.1.243_cudnn7.6.3_0.tar.bz2
+RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN git clone https://github.com/NVIDIA/apex;cd apex;pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+
+#RUN pip install ./tensorflow-2.0.0-cp37-cp37m-manylinux2010_x86_64.whl -i https://pypi.tuna.tsinghua.edu.cn/simple
+#RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+ENV LANG     zh_CN.UTF-8
+ENV LANGUAGE zh_CN.UTF-8
+ENV LC_ALL   zh_CN.UTF-8
+EXPOSE 22 8022 8021 8023 6006 6005 6007 8888 8889 8890

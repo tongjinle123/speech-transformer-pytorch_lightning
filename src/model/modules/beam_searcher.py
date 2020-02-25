@@ -15,7 +15,7 @@ class BestSaver:
 
 class BatchBestSaver:
     def __init__(self, best_k, batch_size, lp_eps=0.0, lp_lambda=5):
-        self.batch = [BestSaver(best_k)] * batch_size
+        self.batch = [BestSaver(best_k) for i in range(batch_size)]
         self.batch_low_socre = [-1e30] * batch_size
         self.lp_eps = lp_eps
         self.lp_lambda = lp_lambda
@@ -54,16 +54,41 @@ class BeamSteper:
         self.continue_mask = t.ones((self.batch_size, self.beam_size), dtype=t.bool, device=self.device)
 
     def get_first_step_token(self):
-        return t.ones((self.batch_size, self.beam_size, 1), dtype=t.long, device=self.device)
+        return self.token_container[:, 0, :].view(-1, 1)
+
+    def first_step(self, step_prob):
+        # step_prob [batch_size, vocab_size]
+        step_prob, step_prob_indice = t.topk(step_prob, self.beam_size)
+        # [batch_size, beam_size]
+        step_prob.masked_fill_(~self.continue_mask, -1e20)
+        # [batch_size, beam_size]
+        self.token_container = t.cat([self.token_container, step_prob_indice.unsqueeze(-1)], dim=-1)
+        # [batch_size, beam_size, seqlength]
+        tmp_prob_container = t.cat([self.prob_container, step_prob.unsqueeze(-1)], -1)
+        # [batch_size, beam_size, seqlength]
+        tmp_prob_container = t.sum(tmp_prob_container[:, :, -2:], dim=-1, keepdim=True)
+        # [batch_size, beam_size, 1]
+        self.prob_container = t.cat([self.prob_container, tmp_prob_container], -1)
+
+        self.continue_mask.masked_fill_(
+            self.token_container[:, :, -1].eq(self.eos_id),
+            False)
+        self.length_container = self.length_container + self.continue_mask
+        self.batch_best_saver.add(self.token_container, self.prob_container, self.length_container)
+        if self.continue_mask.sum() == 0:
+            return False
+        else:
+            print(self.continue_mask.sum())
+            return True
 
     def step(self, step_prob):
         # step_prob [batch_size, beam_size, vocab_size]
-
         step_prob, step_prob_indice = t.topk(step_prob, self.beam_size)
-        step_prob.masked_fill_(~self.continue_mask.unsqueeze(-1), -1e10)
 
+        step_prob.masked_fill_(~self.continue_mask.unsqueeze(-1), -1e20)
         # [batch_size, beam_size, beam_size]
         self.token_container = self.token_container.unsqueeze(-2).repeat(1, 1, self.beam_size, 1)
+
         # [batch_size, beam_size, beam_size, seqlength]
         self.token_container = t.cat([self.token_container, step_prob_indice.unsqueeze(-1)], dim=-1)
         # [batch_size, beam_size, beam_size, new_sequlenth]
@@ -91,5 +116,7 @@ class BeamSteper:
         if self.continue_mask.sum() == 0:
             return False
         else:
+            print(self.continue_mask.sum())
             return True
+
 

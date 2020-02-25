@@ -36,14 +36,14 @@ class TokenDecoder(t.nn.Module):
         net = self.output_layer(net)
         return net, swich
 
-    def beam_search_decode(self, encoder_output, feature_mask, beam_size):
+    def beam_search_decode(self, encoder_output, feature_mask, beam_size, best_k=5, lp_eps=0.7):
         batch_size = encoder_output.size(0)
         device = encoder_output.device
         feature_length = encoder_output.size(1)
         feature_mask = feature_mask.unsqueeze(1).repeat(1, beam_size, 1).view(batch_size*beam_size, -1)
 
         self.beam_steper = BeamSteper(
-            batch_size, beam_size, self.bos_id, self.eos_id, self.vocab_size, device)
+            batch_size, beam_size, self.bos_id, self.eos_id, self.vocab_size, device, k_best=best_k, lp_eps=lp_eps)
         encoder_output = encoder_output.unsqueeze(1).repeat(1, beam_size, 1, 1).view(
             batch_size*beam_size, feature_length, -1)
 
@@ -56,7 +56,6 @@ class TokenDecoder(t.nn.Module):
                 dot_attention_mask = Masker.get_dot_mask(token_mask, feature_mask)
                 token_id = self.beam_steper.get_first_step_token() if i == 0 else self.beam_steper.token_container.view(batch_size * beam_size, -1)
                 token_id = token_id.view(batch_size * beam_size, -1)
-
                 last_prob = self.beam_decode_step(
                     token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask,
                     topk=beam_size, return_last=True)
@@ -67,7 +66,7 @@ class TokenDecoder(t.nn.Module):
                 # if beam_output is None:
                 #     print(self.beam_steper.batch_best_saver.batch)
                 #     break
-        return self.beam_steper.token_container.view(batch_size * beam_size, -1)
+        return self.beam_steper.batch_best_saver.batch
 
 
     def greedy_decode(self, encoder_output, feature_mask):

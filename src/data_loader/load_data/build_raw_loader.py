@@ -62,7 +62,7 @@ class DataLoaderX(DataLoader):
         return BackgroundGenerator(super().__iter__(), max_prefetch=10)
 
 
-def build_raw_data_loader(manifest_list, vocab_path, batch_size, num_workers, speed_perturb):
-    dataset = AudioSet(manifest_list, vocab_path=vocab_path, speed_perturb=speed_perturb)
+def build_raw_data_loader(manifest_list, vocab_path, batch_size, num_workers, speed_perturb, max_duration=10):
+    dataset = AudioSet(manifest_list, vocab_path=vocab_path, speed_perturb=speed_perturb, max_duration=max_duration)
     dataloader = DataLoaderX(dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=CollateFn(), drop_last=True, shuffle=True)
     return dataloader

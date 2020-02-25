@@ -149,6 +149,7 @@ class Transformer(t.nn.Module):
         elif decode_type == 'beam':
             decoded_token = self.token_decoder.beam_search_decode(
                 encoder_output=spec_feature, feature_mask=feature_mask, beam_size=5)
-            print(decoded_token)
-            decoded_string = [self.vocab.id2string(cut_sentence(i, self.vocab.eos_id)) for i in decoded_token]
-            return decoded_string
+            return decoded_token
+            # print(decoded_token)
+            # decoded_string = [self.vocab.id2string(cut_sentence(i, self.vocab.eos_id)) for i in decoded_token]
+            # return decoded_string
