@@ -26,7 +26,7 @@ class BatchBestSaver:
         # bs, b,
         for batch_index, values in enumerate(zip(batch_token, batch_score, batch_length)):
             for b_token, b_score, b_length in zip(*values):
-                lp = (self.lp_lambda + b_length) / (self.lp_lambda + 1) ** self.lp_eps
+                lp = (self.lp_lambda + b_length) ** self.lp_eps / (self.lp_lambda + 1) ** self.lp_eps
                 normalized_score = b_score[-1] / lp
                 self.batch[batch_index].add(b_token, normalized_score)
 
@@ -55,6 +55,9 @@ class BeamSteper:
 
     def get_first_step_token(self):
         return self.token_container[:, 0, :].view(-1, 1)
+
+    def get_first_step_length(self):
+        return self.length_container[:, 0]
 
     def first_step(self, step_prob):
         # step_prob [batch_size, vocab_size]
