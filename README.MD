@@ -1,5 +1,6 @@
 ## end2end chinese-english code-swiching speech recognition in pytorch
 
+
 This is a mixed project borrowing from many other open projects 
 opened recently, trying to use most technique and tricks. And with 
 pytorch_lightning, experiments can be carried out in an easy way. 
@@ -53,3 +54,14 @@ reference:
     https://github.com/vahidk/tfrecord
     https://github.com/kaituoxu/Speech-Transformer
     
+    LIGHTWEIGHT AND EFFICIENT END-TO-END SPEECH RECOGNITION USING LOW-RANK TRANSFORMER
+   
+transformer module:
+    
+    I use pre layer-normalize following the code in tensor2tensor, with masks between each multihead attention and feedforward layer
+    Use Gelu to replace relu as bert.
+    The query and value shares one linear layer in the multihead attention.
+    There is a Masker for building all the masks for transformer and i have to make it clear that the self-attention mask is different from other implemention,
+    It masks both query and key 's pad position, and that needs a little change in multihead attention,
+    Also, i tried to add a low-rank option as it is shown in the paper mentioned above but haven't been tested
+    Reformer as transformer module will be tested later.
