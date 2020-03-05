@@ -7,7 +7,7 @@ from src.utils.label_smoothing_ce_loss import LabelSmoothingLoss
 
 class TransformerLM(t.nn.Module):
     def __init__(self, embedding_size=512, feed_forward_size=1024, hidden_size=64, dropout=0.1, num_head=8, num_layer=6,
-                 vocab_path='testing_vocab_2.model', max_length=50, share_weight=True):
+                 vocab_path='testing_vocab_2.model', max_length=100, share_weight=True, use_low_rank=False):
         super(TransformerLM, self).__init__()
         self.vocab = Vocab(vocab_path)
         self.token_encoder = TokenEncoder(
@@ -20,7 +20,8 @@ class TransformerLM(t.nn.Module):
             max_length=max_length,
             share_weight=share_weight,
             vocab_size=self.vocab.vocab_size,
-            padding_idx=self.vocab.pad_id
+            padding_idx=self.vocab.pad_id,
+            use_low_rank=use_low_rank
         )
         self.ce_loss = LabelSmoothingLoss(
             size=self.vocab.vocab_size, smoothing=0.0, padding_idx=self.vocab.pad_id)
@@ -48,11 +49,22 @@ class TransformerLM(t.nn.Module):
         target_ = target_.index_put(tuple(indices.t()), values=values)
         return input_.detach(), target_.detach(), target_length+1
 
-    def forward(self, ori_token, ori_token_length):
+    def forward(self, ori_token, ori_token_length, cal_ce_loss=True):
         input_token, output_token, token_length, token_mask, token_self_attention_mask = self._prepare_token(
             ori_token, ori_token_length)
         logit = self.token_encoder(input_token, token_mask, token_self_attention_mask)
-        return logit, output_token, token_length
+        if not cal_ce_loss:
+            ce_loss = None
+        else:
+            ce_loss = self.cal_ce_loss(logit, output_token)
+        return logit, output_token, token_length, ce_loss
+
+    def get_last_prob(self, ori_token, ori_token_length):
+        input_token, output_token, token_length, token_mask, token_self_attention_mask = self._prepare_token(
+            ori_token, ori_token_length)
+        logit = self.token_encoder(input_token, token_mask, token_self_attention_mask)
+        prob = t.nn.functional.log_softmax(logit, -1)
+        return prob[:, -1, :]
 
     def cal_ce_loss(self, logit, output_token):
         ce_loss = t.nn.functional.cross_entropy(

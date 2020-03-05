@@ -30,7 +30,7 @@ class Featurizer:
         # feature = t.log(feature + 1e-10)
         feature = self.fbank(sig)
         feature = normalization(feature)
-        feature = concat_and_subsample(feature.numpy(), left_frames=4, skip_frames=3)
+        feature = concat_and_subsample(feature.numpy(), left_frames=4, right_frames=3, skip_frames=5)
         feature_length = len(feature)
         if not self.vocab is None:
             target_id = self.vocab.str2id(target)

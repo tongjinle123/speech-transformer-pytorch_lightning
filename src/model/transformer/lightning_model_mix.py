@@ -72,11 +72,12 @@ class LightningModel(pl.LightningModule):
         return output
 
     def validation_step(self, batch, batch_nb):
+        unvalid = ['[B]','[S]','[N]','[T]','[P]']
         feature, feature_length, target, target_length = batch[0], batch[1], batch[2], batch[3]
         model_output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss = self.forward(
             feature, feature_length, target, target_length, True)
-        result_string_list = [' '.join(tokenize(i)) for i in self.transformer.inference(feature, feature_length)]
-        target_string_list = [' '.join(tokenize(self.transformer.vocab.id2string(i.tolist()))) for i in output_token]
+        result_string_list = [' '.join([j for j in tokenize(i) if j not in unvalid]) for i in self.transformer.inference(feature, feature_length)]
+        target_string_list = [' '.join([j for j in tokenize(self.transformer.vocab.id2string(i.tolist())) if j not in unvalid]) for i in output_token]
         print(result_string_list[0])
         print(target_string_list[0])
         mers = [cal_wer(i[0], i[1]) for i in zip(target_string_list, result_string_list)]

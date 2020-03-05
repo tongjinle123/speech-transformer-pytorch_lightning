@@ -8,11 +8,11 @@ class TokenEncoder(t.nn.Module):
     token transformer encoder
     """
     def __init__(self, input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, vocab_size,
-                 padding_idx, max_length=50, share_weight=True):
+                 padding_idx, max_length=50, share_weight=True, use_low_rank=False):
         super(TokenEncoder, self).__init__()
         self.embedding = Embedding(vocab_size, input_size, padding_idx, max_length, dropout=dropout)
         self.transformer_encoder = TransformerEncoder(
-            input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer)
+            input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, use_low_rank)
         self.layer_norm = t.nn.LayerNorm(input_size, eps=(1/(input_size ** -0.5)))
         self.output_layer = t.nn.Linear(input_size, vocab_size, bias=True)
         t.nn.init.xavier_normal_(self.output_layer.weight)

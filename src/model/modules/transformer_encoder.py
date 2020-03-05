@@ -7,10 +7,10 @@ class TransformerEncoder(t.nn.Module):
     """
     transformer encoder
     """
-    def __init__(self, input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer):
+    def __init__(self, input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, use_low_rank=False):
         super(TransformerEncoder, self).__init__()
         self.layers = t.nn.ModuleList(
-            [TransformerEncoderLayer(input_size, feed_forward_size, hidden_size, dropout, num_head) for _ in range(num_layer)]
+            [TransformerEncoderLayer(input_size, feed_forward_size, hidden_size, dropout, num_head, use_low_rank) for _ in range(num_layer)]
         )
 
     def forward(self, net, src_mask, self_attention_mask):
@@ -20,9 +20,9 @@ class TransformerEncoder(t.nn.Module):
 
 
 class TransformerEncoderLayer(t.nn.Module):
-    def __init__(self, input_size, feed_forward_size, hidden_size, dropout, num_head):
+    def __init__(self, input_size, feed_forward_size, hidden_size, dropout, num_head, use_low_rank=False):
         super(TransformerEncoderLayer, self).__init__()
-        self.multi_head_attention_block = MultiHeadAttentionBLock(input_size, hidden_size, dropout, num_head)
+        self.multi_head_attention_block = MultiHeadAttentionBLock(input_size, hidden_size, dropout, num_head, use_low_rank)
         self.feed_foward_block = FeedForwardBlock(input_size, feed_forward_size, dropout)
 
     def forward(self, src, src_mask, self_attention_mask=None):

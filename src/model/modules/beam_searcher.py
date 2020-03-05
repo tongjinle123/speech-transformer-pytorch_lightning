@@ -16,7 +16,6 @@ class BestSaver:
 class BatchBestSaver:
     def __init__(self, best_k, batch_size, lp_eps=0.0, lp_lambda=5):
         self.batch = [BestSaver(best_k) for i in range(batch_size)]
-        self.batch_low_socre = [-1e30] * batch_size
         self.lp_eps = lp_eps
         self.lp_lambda = lp_lambda
 

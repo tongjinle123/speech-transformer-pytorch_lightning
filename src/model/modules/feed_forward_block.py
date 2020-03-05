@@ -1,22 +1,29 @@
 import torch as t
-from .gelu import Gelu
+from src.model.modules.gelu import Gelu
 import torch
+from src.model.modules.low_rank_linear import LowRankLinear
 
 
 class FeedForwardBlock(t.nn.Module):
     """
     feed forward layer combine with add - layer norm - dropout
     """
-    def __init__(self, input_size, inner_size, dropout):
+    def __init__(self, input_size, inner_size, dropout, use_low_rank=False):
         super(FeedForwardBlock, self).__init__()
-        self.linear1 = t.nn.Linear(input_size, inner_size, bias=True)
+        if not use_low_rank:
+            self.linear1 = t.nn.Linear(input_size, inner_size, bias=True)
+            t.nn.init.xavier_normal_(self.linear1.weight)
+        else:
+            self.linear1 = LowRankLinear(input_size, inner_size, rank=128)
         self.gelu = Gelu()
         self.dropout = t.nn.Dropout(dropout, inplace=True)
-        self.linear2 = t.nn.Linear(inner_size, input_size, bias=True)
-        self.layer_norm = t.nn.LayerNorm(input_size, eps=1/(input_size ** -0.5))
+        if not use_low_rank:
+            self.linear2 = t.nn.Linear(inner_size, input_size, bias=True)
+            t.nn.init.xavier_normal_(self.linear2.weight)
+        else:
+            self.linear2 = LowRankLinear(inner_size, input_size, rank=128)
+        self.layer_norm = t.nn.LayerNorm(input_size, eps=1e-6)
         self.dropout = t.nn.Dropout(dropout, inplace=True)
-        t.nn.init.xavier_normal_(self.linear1.weight)
-        t.nn.init.xavier_normal_(self.linear2.weight)
 
     def forward(self, net):
         residual = net

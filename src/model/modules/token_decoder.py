@@ -10,15 +10,15 @@ class TokenDecoder(t.nn.Module):
     token transformer decoder
     """
     def __init__(self, input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, vocab_size,
-                 padding_idx, max_length=50, share_weight=True, bos_id=3, eos_id=4):
+                 padding_idx, max_length=50, share_weight=True, bos_id=3, eos_id=4, use_low_rank=False):
         super(TokenDecoder, self).__init__()
         self.max_length = max_length
         self.bos_id = bos_id
         self.eos_id = eos_id
         self.vocab_size = vocab_size
         self.embedding = Embedding(vocab_size, input_size, padding_idx, max_length, scale_word_embedding=share_weight)
-        self.transformer_decoder = TransformerDecoder(input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer)
-        self.layer_norm = t.nn.LayerNorm(input_size, eps=1/(input_size ** -0.5))
+        self.transformer_decoder = TransformerDecoder(input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, use_low_rank)
+        self.layer_norm = t.nn.LayerNorm(input_size, eps=1e-6)
         self.output_layer = t.nn.Linear(input_size, vocab_size, bias=False)
         if share_weight:
             self.output_layer.weight = self.embedding.word_embedding.weight

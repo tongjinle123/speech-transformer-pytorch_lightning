@@ -4,7 +4,7 @@ from collections import OrderedDict
 import torch as t
 from src.data_loader.load_data.build_data_loader import build_single_dataloader, build_multi_dataloader
 from src.data_loader.load_data.build_raw_loader import build_raw_data_loader
-from src.model.transformer.transformer import Transformer
+from src.model.transformer_custom.transformer import Transformer
 from src.utils.radam import AdamW, RAdam
 from src.utils.lookahead import Lookahead
 from src.utils.score import cal_wer
@@ -39,14 +39,21 @@ class LightningModel(pl.LightningModule):
             enable_spec_augment=self.hparams.enable_spec_augment,
             share_weight=self.hparams.share_weight,
             smoothing=self.hparams.smoothing,
+            use_low_rank=self.hparams.use_low_rank
         )
-        print(f'model parameters num: {sum(p.numel() for p in self.parameters())}')
+        # x = t.load('exp/lightning_logs/version_1011/checkpoints/_ckpt_epoch_66.ckpt')['state_dict']
+        # print('here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        # model_dict = self.state_dict()
+        # state_dict = {k: v for k, v in x.items() if k in model_dict.keys() and 'transformer.token_decoder.switch_layer.weight' not in k}
+        # model_dict.update(state_dict)
+        # self.load_state_dict(model_dict)
+        # print(f'model parameters num: {sum(p.numel() for p in self.parameters())}')
 
     def forward(self, feature, feature_length, target, target_length, cal_ce_loss=True):
-        output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss = self.transformer.forward(
+        output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss, spec_swtich_out, enc_switch_target = self.transformer.forward(
             feature, feature_length, target,  target_length, cal_ce_loss)
 
-        return output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss
+        return output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss, spec_swtich_out, enc_switch_target
 
     def decode(self, feature, feature_length, decode_type='greedy'):
         assert decode_type in ['greedy', 'beam']
@@ -55,15 +62,17 @@ class LightningModel(pl.LightningModule):
 
     def training_step(self, batch, batch_nb):
         feature, feature_length, target, target_length = batch[0], batch[1], batch[2], batch[3]
-        model_output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss = self.forward(
+        model_output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss, spec_swtich_out, enc_switch_target = self.forward(
             feature, feature_length, target, target_length, True)
         ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
-        loss = self.hparams.loss_lambda * ce_loss + (1 - self.hparams.loss_lambda) * ctc_loss + switch_loss / 2
-        tqdm_dict = {'loss': loss, 'ce_loss': ce_loss, 'ctc_loss': ctc_loss, 'switch_loss': switch_loss, 'lr': self.lr}
+        ctc_switch_loss = self.transformer.cal_ctc_switch_loss(spec_swtich_out, feature_length, enc_switch_target, ori_token_length)
+        loss = ce_loss * 0.5 + ctc_loss * 0.3 + switch_loss * 0.1 + ctc_switch_loss * 0.1
+        tqdm_dict = {'loss': loss, 'ce': ce_loss, 'ctc': ctc_loss, 'switch': switch_loss, 'enc_switch': ctc_switch_loss, 'lr': self.lr}
         output = OrderedDict({
             'loss': loss,
             'ce_loss': ce_loss,
             'ctc_loss': ctc_loss,
+            'enc_switch': ctc_switch_loss,
             'switch_loss': switch_loss,
             'progress_bar': tqdm_dict,
             'log': tqdm_dict
@@ -72,23 +81,18 @@ class LightningModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_nb):
         feature, feature_length, target, target_length = batch[0], batch[1], batch[2], batch[3]
-        model_output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss = self.forward(
+        model_output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss, spec_swtich_out, enc_switch_target = self.forward(
             feature, feature_length, target, target_length, True)
-        result_string_list = [' '.join(tokenize(i)) for i in self.transformer.inference(feature, feature_length)]
-        target_string_list = [' '.join(tokenize(self.transformer.vocab.id2string(i.tolist()))) for i in output_token]
-        print(result_string_list[0])
-        print(target_string_list[0])
-        mers = [cal_wer(i[0], i[1]) for i in zip(target_string_list, result_string_list)]
-        mer = np.mean(mers)
         ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
-        loss = self.hparams.loss_lambda * ce_loss + (1 - self.hparams.loss_lambda) * ctc_loss + switch_loss * 10
-        tqdm_dict = {'loss': loss, 'ce': ce_loss, 'ctc': ctc_loss, 'switch': switch_loss, 'mer': mer, 'lr': self.lr}
+        ctc_switch_loss = self.transformer.cal_ctc_switch_loss(spec_swtich_out, feature_length, enc_switch_target, ori_token_length)
+        loss = ce_loss * 0.5 + ctc_loss * 0.3 + switch_loss * 0.1 + ctc_switch_loss * 0.1
+        tqdm_dict = {'loss': loss, 'ce': ce_loss, 'ctc': ctc_loss, 'switch': switch_loss, 'enc_switch': ctc_switch_loss, 'lr': self.lr}
         output = OrderedDict({
             'loss': loss,
             'ce_loss': ce_loss,
             'ctc_loss': ctc_loss,
+            'enc_switch': ctc_switch_loss,
             'switch_loss': switch_loss,
-            'mer': mer,
             'progress_bar': tqdm_dict,
             'log': tqdm_dict
         })
@@ -99,13 +103,13 @@ class LightningModel(pl.LightningModule):
         ce_loss = t.stack([i['ce_loss'] for i in outputs]).mean()
         ctc_loss = t.stack([i['ctc_loss'] for i in outputs]).mean()
         switch_loss = t.stack([i['switch_loss'] for i in outputs]).mean()
-        mer = np.mean([i['mer'] for i in outputs])
+        # mer = np.mean([i['mer'] for i in outputs])
         print('val_loss', val_loss.item())
         print('ce_loss', ce_loss.item())
         print('ctc_loss', ctc_loss.item())
         print('switch_loss', switch_loss.item())
-        print('mer', mer)
-        return {'val_loss': val_loss, 'val_ce_loss': ce_loss, 'val_mer': mer, 'log': {'val_loss': val_loss, 'val_ce_loss': ce_loss, 'val_mer': mer}}
+        # print('mer', mer)
+        return {'val_loss': val_loss, 'val_ce_loss': ce_loss, 'log': {'val_loss': val_loss, 'val_ce_loss': ce_loss}}
 
     @pl.data_loader
     def train_dataloader(self):
@@ -123,7 +127,8 @@ class LightningModel(pl.LightningModule):
         # )
         dataloader = build_raw_data_loader(
             [
-                # 'data/filterd_manifest/ce_200.csv',
+                # 'data/manifest/libri_train.csv',
+                'data/filterd_manifest/ce_200.csv',
                 'data/filterd_manifest/c_500_train.csv',
                 # 'data/filterd_manifest/aidatatang_200zh_train.csv',
                 # 'data/filterd_manifest/data_aishell_train.csv',
@@ -157,9 +162,10 @@ class LightningModel(pl.LightningModule):
         # )
         dataloader = build_raw_data_loader(
             [
+                # 'data/manifest/libri_test.csv',
                 # 'data/manifest/ce_20_dev.csv',
                 'data/filterd_manifest/c_500_test.csv',
-                # 'data/manifest/ce_20_dev_small.csv',
+                'data/manifest/ce_20_dev_small.csv',
                 # 'aishell2_testing/manifest1.csv',
                 # 'data/filterd_manifest/data_aishell_test.csv'
             ],
@@ -175,6 +181,7 @@ class LightningModel(pl.LightningModule):
                 (self.hparams.model_size ** -0.5) * min(
             (self.global_step + 1) ** -0.5, (self.global_step + 1) * (self.hparams.warm_up_step ** -1.5))
         )
+        lr = lr if lr <=1e-4 else 1e-4
         self.lr = lr
         for pg in optimizer.param_groups:
             pg['lr'] = lr
@@ -182,7 +189,7 @@ class LightningModel(pl.LightningModule):
         optimizer.zero_grad()
 
     def configure_optimizers(self):
-        optimizer = AdamW(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.997))
+        optimizer = AdamW(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.997), eps=1e-4)
         optimizer = Lookahead(optimizer)
         return optimizer
 
@@ -201,21 +208,22 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--num_head', default=8, type=int)
         parser.add_argument('--num_encoder_layer', default=6, type=int)
         parser.add_argument('--num_decoder_layer', default=6, type=int)
-        parser.add_argument('--vocab_path', default='testing_vocab_2.model', type=str)
+        parser.add_argument('--vocab_path', default='testing_vocab.model', type=str)
         parser.add_argument('--max_feature_length', default=1024, type=int)
         parser.add_argument('--max_token_length', default=50, type=int)
         parser.add_argument('--share_weight', default=True, type=bool)
         parser.add_argument('--loss_lambda', default=0.8, type=float)
         parser.add_argument('--smoothing', default=0.1, type=float)
+        parser.add_argument('--use_low_rank', default=False, type=bool)
 
         parser.add_argument('--lr', default=3e-4, type=float)
         parser.add_argument('--warm_up_step', default=16000, type=int)
         parser.add_argument('--factor', default=1, type=int)
         parser.add_argument('--enable_spec_augment', default=True, type=bool)
 
-        parser.add_argument('--train_batch_size', default=32, type=int)
+        parser.add_argument('--train_batch_size', default=64, type=int)
         parser.add_argument('--train_loader_num_workers', default=16, type=int)
-        parser.add_argument('--val_batch_size', default=32, type=int)
+        parser.add_argument('--val_batch_size', default=64, type=int)
         parser.add_argument('--val_loader_num_workers', default=16, type=int)
 
         return parser

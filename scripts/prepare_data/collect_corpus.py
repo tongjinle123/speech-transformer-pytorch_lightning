@@ -23,5 +23,10 @@ def get_combined_segmented_text(file_list, write_to):
 
 
 if __name__ == '__main__':
+
+    # files = get_dir_files('data/corpus/', '.txt')
+    # get_combined_segmented_text(files, 'data/corpus/all.combined')
     files = get_dir_files('data/corpus/', '.txt')
-    get_combined_segmented_text(files, 'data/corpus/all.combined')
+    files = [i for i in files if 'c_500' in i or 'ce_200' in i]
+    print(files)
+    get_combined_segmented_text(files, 'data/corpus/all_2.combined')

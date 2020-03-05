@@ -10,14 +10,16 @@ class TokenDecoder(t.nn.Module):
     token transformer decoder
     """
     def __init__(self, input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, vocab_size,
-                 padding_idx, max_length=50, share_weight=True, bos_id=3, eos_id=4):
+                 padding_idx, max_length=50, share_weight=True, bos_id=3, eos_id=4, use_low_rank=False):
         super(TokenDecoder, self).__init__()
         self.max_length = max_length
         self.bos_id = bos_id
         self.eos_id = eos_id
         self.vocab_size = vocab_size
-        self.embedding = Embedding(vocab_size, input_size, padding_idx, max_length, scale_word_embedding=share_weight)
-        self.transformer_decoder = TransformerDecoder(input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer)
+        self.embedding = Embedding(
+            vocab_size, input_size, padding_idx, max_length, scale_word_embedding=share_weight)
+        self.transformer_decoder = TransformerDecoder(
+            input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, use_low_rank)
         self.layer_norm = t.nn.LayerNorm(input_size, eps=1/(input_size ** -0.5))
         self.output_layer = t.nn.Linear(input_size, vocab_size, bias=False)
         self.switch_layer = t.nn.Linear(input_size, 4, bias=False)
@@ -57,9 +59,7 @@ class TokenDecoder(t.nn.Module):
                     dot_attention_mask = Masker.get_dot_mask(token_mask, feature_mask)
                     last_prob = self.beam_decode_step(
                         token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask)
-                    print(last_prob.shape)
                     if_continue = self.beam_steper.first_step(last_prob)
-                    print('first_passed')
                     if not if_continue:
                         break
                 else:

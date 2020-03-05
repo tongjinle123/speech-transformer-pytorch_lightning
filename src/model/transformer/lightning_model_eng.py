@@ -206,7 +206,7 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--num_decoder_layer', default=6, type=int)
         parser.add_argument('--vocab_path', default='testing_vocab_2.model', type=str)
         parser.add_argument('--max_feature_length', default=1024, type=int)
-        parser.add_argument('--max_token_length', default=50, type=int)
+        parser.add_argument('--max_token_length', default=100, type=int)
         parser.add_argument('--share_weight', default=True, type=bool)
         parser.add_argument('--loss_lambda', default=0.8, type=float)
         parser.add_argument('--smoothing', default=0.1, type=float)

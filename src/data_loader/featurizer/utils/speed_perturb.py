@@ -9,3 +9,8 @@ def speed_perturb(sig, min_rate=90, max_rate=110, step=2, given_rate=None):
         rate = given_rate
     perturbed = t.nn.functional.interpolate(sig.unsqueeze(0), scale_factor=rate)
     return perturbed[0]
+
+def speed_perturb2(sig, given_rate=None):
+    rate = given_rate
+    perturbed = t.nn.functional.interpolate(sig.unsqueeze(0), scale_factor=rate)
+    return perturbed[0]

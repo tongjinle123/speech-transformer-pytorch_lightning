@@ -76,7 +76,7 @@ class Transformer(t.nn.Module):
         switch.masked_fill_(output_token.eq(0), 0)  # pad=0
         switch.masked_fill_((output_token.ge(12) & output_token.le(4211)), 2)  # ch = 2
         switch.masked_fill_((output_token.ge(1) & output_token.le(10)), 3)  # other = 3
-        return input_token.detach(), output_token.detach(), token_length.detach(), token_mask.detach(), token_self_attention_mask.detach(), switch.detach()
+        return input_token, output_token, token_length, token_mask, token_self_attention_mask, switch
 
     def _rebuild_target(self, target, target_length):
         """
@@ -91,6 +91,7 @@ class Transformer(t.nn.Module):
 
     def forward(self, feature, feature_length, ori_token, ori_token_length, cal_ce_loss=True):
         #
+        t.cuda.empty_cache()
         feature, feature_mask, feature_self_attention_mask = self._prepare_feature(
             feature, feature_length, restrict_left_length=self.restrict_left_length,
             restrict_right_length=self.restrict_right_length)
