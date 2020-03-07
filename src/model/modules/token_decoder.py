@@ -27,8 +27,8 @@ class TokenDecoder(t.nn.Module):
 
     def forward(self, token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask):
         net = self.embedding(token_id)
-        net.masked_fill_(token_mask.unsqueeze(-1) == 0, 0.0)
-        net = self.transformer_decoder(net, token_mask.unsqueeze(-1), encoder_output, self_attention_mask, dot_attention_mask)
+        # net.masked_fill_(~token_mask, 0.0)
+        net = self.transformer_decoder(net, token_mask, encoder_output, self_attention_mask, dot_attention_mask)
         net = self.layer_norm(net)
         net = self.output_layer(net)
         return net

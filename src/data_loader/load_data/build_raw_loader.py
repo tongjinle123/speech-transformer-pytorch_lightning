@@ -108,7 +108,7 @@ def build_raw_data_loader(manifest_list, vocab_path, batch_size, num_workers, sp
     dataloader = DataLoaderX(dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=CollateFn(), drop_last=True, shuffle=True)
     return dataloader
 
-def build_raw_data_loader2(manifest_list, vocab_path, batch_size, num_workers, speed_perturb, max_duration=7):
+def build_raw_data_loader2(manifest_list, vocab_path, batch_size, num_workers, speed_perturb, max_duration=10):
     dataset = AudioSet2(manifest_list, vocab_path=vocab_path, speed_perturb=speed_perturb, max_duration=max_duration)
     dataloader = DataLoaderX(dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=CollateFn(), drop_last=True, shuffle=True)
     return dataloader

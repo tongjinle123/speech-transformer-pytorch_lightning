@@ -20,7 +20,7 @@ class TokenDecoder(t.nn.Module):
             vocab_size, input_size, padding_idx, max_length, scale_word_embedding=share_weight)
         self.transformer_decoder = TransformerDecoder(
             input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, use_low_rank)
-        self.layer_norm = t.nn.LayerNorm(input_size, eps=1/(input_size ** -0.5))
+        self.layer_norm = t.nn.LayerNorm(input_size, eps=1e-6)
         self.output_layer = t.nn.Linear(input_size, vocab_size, bias=False)
         self.switch_layer = t.nn.Linear(input_size, 4, bias=False)
         t.nn.init.xavier_normal_(self.switch_layer.weight)
@@ -31,8 +31,8 @@ class TokenDecoder(t.nn.Module):
 
     def forward(self, token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask):
         net = self.embedding(token_id)
-        net.masked_fill_(token_mask.unsqueeze(-1) == 0, 0.0)
-        net = self.transformer_decoder(net, token_mask.unsqueeze(-1), encoder_output, self_attention_mask, dot_attention_mask)
+        net.masked_fill_(~token_mask.unsqueeze(-1), 0.0)
+        net = self.transformer_decoder(net, token_mask, encoder_output, self_attention_mask, dot_attention_mask)
         net = self.layer_norm(net)
         swich = self.switch_layer(net)
         net = self.output_layer(net)

@@ -52,9 +52,8 @@ class MultiHeadAttentionLowRank(t.nn.Module):
         # B, N, KL, H
         attention_matrix = (query_projection @ key_projection) / self.scale
         # B, N, QL, KL
-
         if attention_mask is not None:
-            attention_matrix.masked_fill_(~attention_mask.unsqueeze(1).bool(), -float('inf'))
+            attention_matrix.masked_fill_(~attention_mask.unsqueeze(1), -float('inf'))
 
         attention_matrix = F.softmax(attention_matrix, -1)
         attention_matrix = attention_matrix.masked_fill(t.isnan(attention_matrix), 0)
@@ -98,9 +97,8 @@ class MultiHeadAttention(t.nn.Module):
         # B, N, KL, H
         attention_matrix = (query_projection @ key_projection) / self.scale
         # B, N, QL, KL
-
         if attention_mask is not None:
-            attention_matrix.masked_fill_(~attention_mask.unsqueeze(1).bool(), -float('inf'))
+            attention_matrix.masked_fill_(~attention_mask.unsqueeze(1), -float('inf'))
 
         attention_matrix = F.softmax(attention_matrix, -1)
         attention_matrix = attention_matrix.masked_fill(t.isnan(attention_matrix), 0)

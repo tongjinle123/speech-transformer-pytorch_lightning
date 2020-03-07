@@ -1,37 +1,29 @@
-from src.data_loader.featurizer.utils.load import load
-from src.data_loader.featurizer.utils.fbank import Fbank
-from src.data_loader.featurizer.utils.normalize import normalization
-from src.data_loader.featurizer.utils.sub_sample import concat_and_subsample
-from src.data_loader.featurizer.utils.speed_perturb import speed_perturb
-from src.utils.vocab import Vocab
+import soundfile
+import torchaudio as ta
 import torch as t
-from src.data_loader.featurizer.utils.transformes import MelSpectrogram
+from src.utils.vocab import Vocab
+import numpy as np
+
+
 class Featurizer:
     def __init__(self, n_mel=80, left_frames=3, right_frames=0, skip_frames=2, vocab_path=None, speed_perturb=False):
         super(Featurizer, self).__init__()
-        self.fbank = Fbank(sample_rate=16000, n_fft=512, win_length=400, hop_length=160, n_mels=n_mel)
-        # self.fbank = MelSpectrogram(
-        #     sample_rate=16000, n_fft=512, win_length=400, hop_length=160, n_mels=80)
+
         if not vocab_path is None:
             self.vocab = Vocab(vocab_path)
         else:
             self.vocab = None
         self.speed_perturb = speed_perturb
+        print('using new')
 
     @property
     def unk_id(self):
         return self.vocab.unk_id
 
     def __call__(self, file, target=None):
-        sig = load(file, do_vad=False)
-        if self.speed_perturb:
-            sig = speed_perturb(sig, 90, 110, 4)
-        # feature = self.fbank(sig)[0].transpose(0, 1).detach()
-        # feature = t.log(feature + 1e-10)
-        feature = self.fbank(sig)
-        feature = normalization(feature)
-        feature = concat_and_subsample(feature.numpy(), left_frames=4, right_frames=3, skip_frames=5)
-        feature_length = len(feature)
+
+        feature = load_file(file)
+        feature_length = feature.shape[0]
         if not self.vocab is None:
             target_id = self.vocab.str2id(target)
             target_length = len(target_id)
@@ -41,4 +33,29 @@ class Featurizer:
         return t.from_numpy(feature), feature_length, t.LongTensor(target_id), target_length
 
 
+def concat_and_subsample(features, left_frames=3, right_frames=0, skip_frames=2):
 
+    time_steps, feature_dim = features.shape
+    concated_features = np.zeros(
+        shape=[time_steps, (1+left_frames+right_frames) * feature_dim], dtype=np.float32)
+
+    concated_features[:, left_frames * feature_dim: (left_frames+1)*feature_dim] = features
+
+    for i in range(left_frames):
+        concated_features[i+1: time_steps, (left_frames-i-1)*feature_dim: (
+            left_frames-i) * feature_dim] = features[0:time_steps-i-1, :]
+
+    for i in range(right_frames):
+        concated_features[0:time_steps-i-1, (right_frames+i+1)*feature_dim: (
+            right_frames+i+2)*feature_dim] = features[i+1: time_steps, :]
+
+    return concated_features[::skip_frames+1, :]
+
+
+def load_file(file, left_frames=4, right_frames=0, skip_frames=3):
+    sig, _ = soundfile.read(file, dtype='int16')
+    sig = t.from_numpy(sig).unsqueeze(0)
+    feature = ta.compliance.kaldi.fbank(sig, num_mel_bins=80, use_log_fbank=True)
+    feature = (feature - feature.mean()) / feature.std()
+    feature = concat_and_subsample(feature, left_frames=left_frames, right_frames=right_frames, skip_frames=skip_frames)
+    return feature

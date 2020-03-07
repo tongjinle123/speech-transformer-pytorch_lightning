@@ -5,7 +5,7 @@ from src.utils.vocab import Vocab
 from src.model.modules.spec_encoder import SpecEncoder
 # from src.model.modules.token_decoder_swich import TokenDecoder
 from src.utils.label_smoothing_ce_loss import LabelSmoothingLoss
-
+import time
 
 class Transformer(t.nn.Module):
     def __init__(self, num_time_mask=2, num_freq_mask=2, freq_mask_length=15, time_mask_length=15, feature_dim=320,
@@ -96,7 +96,6 @@ class Transformer(t.nn.Module):
 
     def forward(self, feature, feature_length, ori_token, ori_token_length, cal_ce_loss=True):
         #
-        t.cuda.empty_cache()
         feature, feature_mask, feature_self_attention_mask = self._prepare_feature(
             feature, feature_length, restrict_left_length=self.restrict_left_length,
             restrict_right_length=self.restrict_right_length)
@@ -106,8 +105,10 @@ class Transformer(t.nn.Module):
         #
         spec_feature = self.spec_encoder(feature, feature_mask, feature_self_attention_mask)
         #
+
         spec_output = self.encoder_linear(spec_feature)
         #
+
         spec_swtich_out = self.encoder_linear_switch(spec_feature)
         #
         dot_attention_mask = Masker.get_dot_mask(token_mask, feature_mask)
@@ -206,9 +207,9 @@ class TokenDecoder(t.nn.Module):
             vocab_size, input_size, padding_idx, max_length, scale_word_embedding=share_weight)
         self.transformer_decoder = TransformerDecoder(
             input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, use_low_rank)
-        self.layer_norm = t.nn.LayerNorm(input_size, eps=1/(input_size ** -0.5))
-        self.output_layer = t.nn.Linear(input_size, vocab_size, bias=False)
-        self.switch_layer = t.nn.Linear(input_size, 3, bias=False)
+        self.layer_norm = t.nn.LayerNorm(input_size, eps=1e-6)
+        self.output_layer = t.nn.Linear(input_size, vocab_size, bias=True)
+        self.switch_layer = t.nn.Linear(input_size, 3, bias=True)
         t.nn.init.xavier_normal_(self.switch_layer.weight)
         if share_weight:
             self.output_layer.weight = self.embedding.word_embedding.weight
@@ -217,8 +218,8 @@ class TokenDecoder(t.nn.Module):
 
     def forward(self, token_id, encoder_output, token_mask, self_attention_mask, dot_attention_mask):
         net = self.embedding(token_id)
-        net.masked_fill_(token_mask.unsqueeze(-1) == 0, 0.0)
-        net = self.transformer_decoder(net, token_mask.unsqueeze(-1), encoder_output, self_attention_mask, dot_attention_mask)
+        net.masked_fill_(~token_mask.unsqueeze(-1), 0.0)
+        net = self.transformer_decoder(net, token_mask, encoder_output, self_attention_mask, dot_attention_mask)
         net = self.layer_norm(net)
         swich = self.switch_layer(net)
         net = self.output_layer(net)
