@@ -1,6 +1,6 @@
 ## end2end chinese-english code-swiching speech recognition in pytorch
 
-# please Wait for a huge reshape following based on the features from espnet
+# Please wait for a huge reshape following based on the features from espnet
 
 This is a mixed project borrowing from many other open projects 
 opened recently, trying to use most technique and tricks. And with 
