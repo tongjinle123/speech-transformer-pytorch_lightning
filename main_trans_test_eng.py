@@ -1,6 +1,6 @@
 from pytorch_lightning.trainer.trainer import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
-from src_test.model.transformer.lightning_model import LightningModel
+from src_test.model.transformer.lightning_model_eng import LightningModel
 import torch.backends.cudnn as cudnn
 import random
 import torch as t
@@ -20,6 +20,7 @@ def get_args():
     parser = LightningModel.add_model_specific_args(parent_parser)
     return parser.parse_args()
 
+
 def main(hparams):
     model = LightningModel(hparams)
     if hparams.seed is not None:
@@ -29,8 +30,8 @@ def main(hparams):
     exp_root = 'exp'
     log_folder = 'lightning_logs'
     log_root = os.path.join(exp_root, log_folder)
-    logger = TestTubeLogger(exp_root, name=log_folder, version=5006)
-    checkpoint = ModelCheckpoint(filepath='exp/lightning_logs/version_5006/checkpoints/',
+    logger = TestTubeLogger(exp_root, name=log_folder, version=5005)
+    checkpoint = ModelCheckpoint(filepath='exp/lightning_logs/version_5005/checkpoints/',
                                  monitor='val_loss', verbose=True, save_top_k=-1, mode='min')
     trainer = Trainer(
         logger=logger,
@@ -38,7 +39,6 @@ def main(hparams):
         early_stop_callback=False,
         checkpoint_callback=checkpoint,
         accumulate_grad_batches=2,
-        profiler=True,
         progress_bar_refresh_rate=10,
         default_save_path='exp/',
         val_check_interval=1.0,
@@ -55,7 +55,7 @@ def main(hparams):
         use_amp=False,
         precision=32,
         # amp_level='O1',
-        # resume_from_checkpoint='exp/lightning_logs/version_5002/checkpoints/epoch=74.ckpt'
+        resume_from_checkpoint='exp/lightning_logs/version_5005/checkpoints/epoch=19_v1.ckpt'
     )
     # if hparams.evaluate:
     #     trainer.run_evaluation()

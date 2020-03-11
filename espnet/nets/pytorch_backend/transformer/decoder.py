@@ -16,6 +16,7 @@ from espnet.nets.pytorch_backend.transformer.mask import subsequent_mask
 from espnet.nets.pytorch_backend.transformer.positionwise_feed_forward import PositionwiseFeedForward
 from espnet.nets.pytorch_backend.transformer.repeat import repeat
 from espnet.nets.scorer_interface import ScorerInterface
+import math
 
 
 class Decoder(ScorerInterface, torch.nn.Module):
@@ -54,16 +55,20 @@ class Decoder(ScorerInterface, torch.nn.Module):
         """Construct an Decoder object."""
         torch.nn.Module.__init__(self)
         if input_layer == "embed":
+            # self.embed = torch.nn.Embedding(odim, attention_dim)
+            # self.emb_pos = pos_enc_class(attention_dim, positional_dropout_rate)
+
             self.embed = torch.nn.Sequential(
                 torch.nn.Embedding(odim, attention_dim),
                 pos_enc_class(attention_dim, positional_dropout_rate)
             )
         elif input_layer == "linear":
+            from src_test.model.module.gelu import Gelu
             self.embed = torch.nn.Sequential(
                 torch.nn.Linear(odim, attention_dim),
                 torch.nn.LayerNorm(attention_dim),
                 torch.nn.Dropout(dropout_rate),
-                torch.nn.ReLU(),
+                Gelu(),
                 pos_enc_class(attention_dim, positional_dropout_rate)
             )
         elif isinstance(input_layer, torch.nn.Module):
@@ -92,6 +97,8 @@ class Decoder(ScorerInterface, torch.nn.Module):
             self.output_layer = torch.nn.Linear(attention_dim, odim)
         else:
             self.output_layer = None
+
+        self.scale = math.sqrt(attention_dim)
 
     def forward(self, tgt, tgt_mask, memory, memory_mask):
         """Forward decoder.
@@ -133,6 +140,7 @@ class Decoder(ScorerInterface, torch.nn.Module):
         :rtype: Tuple[torch.Tensor, List[torch.Tensor]]
         """
         x = self.embed(tgt)
+
         if cache is None:
             cache = self.init_state()
         new_cache = []

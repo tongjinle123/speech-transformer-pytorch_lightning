@@ -5,6 +5,7 @@ import torch as t
 from src.data_loader.load_data.build_raw_loader import build_raw_data_loader2
 from src_test.model.transformer.transformer import Transformer
 from src.utils.radam import AdamW, RAdam
+from src_reshaped.loader.dataloader.audio_loader import build_data_loader, build_predumped_loader
 from src.utils.lookahead import Lookahead
 from src.utils.score import cal_wer
 from src.utils.tokenizer import tokenize
@@ -40,7 +41,9 @@ class LightningModel(pl.LightningModule):
             smoothing=self.hparams.smoothing,
             mtlalpha=self.hparams.loss_lambda
         )
-        # print(f'model parameters num: {sum(p.numel() for p in self.parameters())}')
+        # state = t.load('exp/lightning_logs/version_5005/checkpoints/epoch=36.ckpt')['state_dict']
+        # self.load_state_dict(state)
+        # # print(f'model parameters num: {sum(p.numel() for p in self.parameters())}')
 
 
     def forward(self, feature, feature_length, target, target_length):
@@ -68,7 +71,7 @@ class LightningModel(pl.LightningModule):
         acc = self.transformer.acc
         if self.trainer.use_dp or self.trainer.use_ddp2:
             loss = loss.unsqueeze(0)
-        tqdm_dict = {'val_loss': loss, 'acc': acc, 'switch':self.transformer.loss_switch,'att':self.transformer.loss_att, 'ctc':self.transformer.loss_ctc,'lr': self.lr}
+        tqdm_dict = {'val_loss': loss, 'acc': acc, 'switch': self.transformer.loss_switch, 'att': self.transformer.loss_att, 'ctc':self.transformer.loss_ctc,'lr': self.lr}
         output = OrderedDict({
             'val_loss': loss,
             'acc': acc,
@@ -85,40 +88,41 @@ class LightningModel(pl.LightningModule):
         return {'val_loss': val_loss, 'val_acc': acc, 'log': {'val_loss': val_loss, 'val_acc': acc}}
 
     def train_dataloader(self):
-        dataloader = build_raw_data_loader2(
-            [
-                # 'data/filterd_manifest/ce_200.csv',
-                # 'data/filterd_manifest/c_500_train.csv',
-                # 'data/filterd_manifest/aidatatang_200zh_train.csv',
-                'data/filterd_manifest/data_aishell_train.csv',
-                # 'data/filterd_manifest/AISHELL-2.csv',
-                # 'data/filterd_manifest/magic_data_train.csv',
-                # 'data/manifest/libri_100.csv',
-                # 'data/manifest/libri_360.csv',
-                # 'data/manifest/libri_500.csv'
-            ],
-            vocab_path=self.hparams.vocab_path,
-            batch_size=self.hparams.train_batch_size,
-            num_workers=self.hparams.train_loader_num_workers,
-            speed_perturb=True
+        manifest_list = [
+                            'data/filterd_manifest/ce_200.csv',
+                            'data/filterd_manifest/c_500_train.csv',
+                            # 'data/filterd_manifest/aidatatang_200zh_train.csv',
+                            # 'data/filterd_manifest/data_aishell_train.csv',
+                            # 'data/filterd_manifest/AISHELL-2.csv',
+                            # 'data/filterd_manifest/magic_data_train.csv',
+                            # 'data/manifest/libri_100.csv',
+                            # 'data/manifest/libri_360.csv',
+                            # 'data/manifest/libri_500.csv'
+                        ]
+        dataloader = build_data_loader(
+            manifest_list=manifest_list, batch_size=self.hparams.train_batch_size,
+            num_workers=self.hparams.train_loader_num_workers, left_frames=5, skip_frames=4
         )
+
         return dataloader
 
     def val_dataloader(self):
 
-        dataloader = build_raw_data_loader2(
-            [
-                # 'data/manifest/ce_20_dev.csv',
-                # 'data/filterd_manifest/c_500_test.csv',
-                # 'data/manifest/ce_20_dev_small.csv',
-                # 'aishell2_testing/manifest1.csv',
-                'data/filterd_manifest/data_aishell_test.csv'
-            ],
-            vocab_path=self.hparams.vocab_path,
-            batch_size=self.hparams.train_batch_size,
-            num_workers=self.hparams.train_loader_num_workers,
-            speed_perturb=False
+        manifest_list = [
+            # 'data/filterd_manifest/c_500_test.csv',
+            'data/manifest/ce_20_dev.csv'
+        ]
+                            # 'data/manifest/ce_20_dev.csv',
+                            # 'data/filterd_manifest/c_500_test_small.csv',
+                            # 'data/manifest/ce_20_dev_small.csv',
+                            # 'aishell2_testing/manifest1.csv',
+                            # 'data/filterd_manifest/data_aishell_test.csv'
+
+        dataloader = build_data_loader(
+            manifest_list=manifest_list, batch_size=self.hparams.train_batch_size,
+            num_workers=self.hparams.train_loader_num_workers, left_frames=5, skip_frames=4
         )
+
         return dataloader
 
     def optimizer_step(self, epoch_nb, batch_nb, optimizer, optimizer_i, second_order_closure=None):
@@ -151,7 +155,7 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--dropout', default=0.1, type=float)
         parser.add_argument('--num_head', default=4, type=int)
         parser.add_argument('--num_encoder_layer', default=6, type=int)
-        parser.add_argument('--num_decoder_layer', default=12, type=int)
+        parser.add_argument('--num_decoder_layer', default=6, type=int)
         parser.add_argument('--vocab_path', default='testing_vocab.model', type=str)
         parser.add_argument('--max_feature_length', default=1024, type=int)
         parser.add_argument('--max_token_length', default=100, type=int)
@@ -165,7 +169,7 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--enable_spec_augment', default=True, type=bool)
 
         parser.add_argument('--train_batch_size', default=32, type=int)
-        parser.add_argument('--train_loader_num_workers', default=16, type=int)
+        parser.add_argument('--train_loader_num_workers', default=32, type=int)
         parser.add_argument('--val_batch_size', default=32, type=int)
         parser.add_argument('--val_loader_num_workers', default=16, type=int)
 

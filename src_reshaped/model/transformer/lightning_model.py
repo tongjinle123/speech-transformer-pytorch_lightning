@@ -2,13 +2,10 @@ import pytorch_lightning as pl
 from test_tube import HyperOptArgumentParser
 from collections import OrderedDict
 import torch as t
-from src.data_loader.load_data.build_raw_loader import build_raw_data_loader2
-from src_test.model.transformer.transformer import Transformer
-from src.utils.radam import AdamW, RAdam
-from src.utils.lookahead import Lookahead
-from src.utils.score import cal_wer
-from src.utils.tokenizer import tokenize
 import numpy as np
+from src_reshaped.model.transformer.transformer import Transformer
+from src_reshaped.utils.optimizer import RAdam
+from src_reshaped.loader.dataloader.audio_loader import build_predumped_loader
 
 
 class LightningModel(pl.LightningModule):
@@ -43,82 +40,13 @@ class LightningModel(pl.LightningModule):
         # print(f'model parameters num: {sum(p.numel() for p in self.parameters())}')
 
 
-    def forward(self, feature, feature_length, target, target_length):
-        loss = self.transformer.forward(feature, feature_length, target, target_length)
-        return loss
-
-    def training_step(self, batch, batch_nb):
-        feature, feature_length, target, target_length = batch[0], batch[1], batch[2], batch[3]
-        loss = self.forward(feature, feature_length, target, target_length)
-        acc = self.transformer.acc
-        if self.trainer.use_dp or self.trainer.use_ddp2:
-            loss = loss.unsqueeze(0)
-        tqdm_dict = {'train_loss': loss, 'acc': acc, 'switch': self.transformer.loss_switch,'att':self.transformer.loss_att, 'ctc':self.transformer.loss_ctc,'lr': self.lr}
-        output = OrderedDict({
-            'loss': loss,
-            'acc': acc,
-            'progress_bar': tqdm_dict,
-            'log': tqdm_dict
-        })
-        return output
-
-    def validation_step(self, batch, batch_nb):
-        feature, feature_length, target, target_length = batch[0], batch[1], batch[2], batch[3]
-        loss = self.forward(feature, feature_length, target, target_length)
-        acc = self.transformer.acc
-        if self.trainer.use_dp or self.trainer.use_ddp2:
-            loss = loss.unsqueeze(0)
-        tqdm_dict = {'val_loss': loss, 'acc': acc, 'switch':self.transformer.loss_switch,'att':self.transformer.loss_att, 'ctc':self.transformer.loss_ctc,'lr': self.lr}
-        output = OrderedDict({
-            'val_loss': loss,
-            'acc': acc,
-            'progress_bar': tqdm_dict,
-            'log': tqdm_dict
-        })
-        return output
-
-    def validation_end(self, outputs):
-        val_loss = t.stack([i['val_loss'] for i in outputs]).mean()
-        acc = np.mean([i['acc'] for i in outputs])
-        print('val_loss', val_loss.item())
-        print('acc', acc)
-        return {'val_loss': val_loss, 'val_acc': acc, 'log': {'val_loss': val_loss, 'val_acc': acc}}
-
     def train_dataloader(self):
-        dataloader = build_raw_data_loader2(
-            [
-                # 'data/filterd_manifest/ce_200.csv',
-                # 'data/filterd_manifest/c_500_train.csv',
-                # 'data/filterd_manifest/aidatatang_200zh_train.csv',
-                'data/filterd_manifest/data_aishell_train.csv',
-                # 'data/filterd_manifest/AISHELL-2.csv',
-                # 'data/filterd_manifest/magic_data_train.csv',
-                # 'data/manifest/libri_100.csv',
-                # 'data/manifest/libri_360.csv',
-                # 'data/manifest/libri_500.csv'
-            ],
-            vocab_path=self.hparams.vocab_path,
-            batch_size=self.hparams.train_batch_size,
-            num_workers=self.hparams.train_loader_num_workers,
-            speed_perturb=True
-        )
+
         return dataloader
 
     def val_dataloader(self):
 
-        dataloader = build_raw_data_loader2(
-            [
-                # 'data/manifest/ce_20_dev.csv',
-                # 'data/filterd_manifest/c_500_test.csv',
-                # 'data/manifest/ce_20_dev_small.csv',
-                # 'aishell2_testing/manifest1.csv',
-                'data/filterd_manifest/data_aishell_test.csv'
-            ],
-            vocab_path=self.hparams.vocab_path,
-            batch_size=self.hparams.train_batch_size,
-            num_workers=self.hparams.train_loader_num_workers,
-            speed_perturb=False
-        )
+
         return dataloader
 
     def optimizer_step(self, epoch_nb, batch_nb, optimizer, optimizer_i, second_order_closure=None):

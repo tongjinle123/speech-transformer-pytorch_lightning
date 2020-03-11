@@ -1,15 +1,12 @@
 import torch as t
 from src.model.modules.spec_augment_layer import SpecAugment
 from src.utils.vocab import Vocab
-
 from argparse import Namespace
 from distutils.util import strtobool
 
 import logging
 import math
-
 import torch
-
 from espnet.nets.asr_interface import ASRInterface
 from espnet.nets.pytorch_backend.ctc import CTC
 from espnet.nets.pytorch_backend.e2e_asr import CTC_LOSS_THRESHOLD
@@ -27,7 +24,6 @@ from espnet.nets.pytorch_backend.transformer.mask import subsequent_mask
 from espnet.nets.pytorch_backend.transformer.mask import target_mask
 from espnet.nets.pytorch_backend.transformer.plot import PlotAttentionReport
 from espnet.nets.scorers.ctc import CTCPrefixScorer
-
 
 
 class Transformer(t.nn.Module):
@@ -59,8 +55,6 @@ class Transformer(t.nn.Module):
             idim=feature_dim, attention_dim=model_size, attention_heads=num_head, linear_units=feed_forward_size,
             num_blocks=num_encoder_layer, dropout_rate=dropout, positional_dropout_rate=dropout,
             attention_dropout_rate=dropout, input_layer='linear', padding_idx=self.vocab.pad_id)
-        self.encoder_linear = t.nn.Linear(model_size, self.vocab.vocab_size, bias=True)
-        t.nn.init.xavier_normal_(self.encoder_linear.weight)
 
         self.decoder = Decoder(
             odim=self.vocab.vocab_size, attention_dim=model_size, attention_heads=num_head,
@@ -68,13 +62,16 @@ class Transformer(t.nn.Module):
             positional_dropout_rate=dropout, self_attention_dropout_rate=dropout, src_attention_dropout_rate=0,
             input_layer='embed', use_output_layer=False)
         self.decoder_linear = t.nn.Linear(model_size, self.vocab.vocab_size, bias=True)
+        self.decoder_switch_linear = t.nn.Linear(model_size, 4, bias=True)
 
         self.criterion = LabelSmoothingLoss(
-            size=self.odim, smoothing=smoothing, padding_idx=self.vocab.pad_id, normalize_length=False)
-        # self.verbose = args.verbose
+            size=self.odim, smoothing=smoothing, padding_idx=self.vocab.pad_id, normalize_length=True)
+        self.switch_criterion = LabelSmoothingLoss(
+            size=4, smoothing=0, padding_idx=self.vocab.pad_id, normalize_length=True
+        )
         self.mtlalpha = mtlalpha
         if mtlalpha > 0.0:
-            self.ctc = CTC(self.odim, eprojs=self.adim, dropout_rate=dropout, ctc_type='builtin', reduce=True)
+            self.ctc = CTC(self.odim, eprojs=self.adim, dropout_rate=dropout, ctc_type='builtin', reduce=False)
         else:
             self.ctc = None
 
@@ -94,6 +91,9 @@ class Transformer(t.nn.Module):
         self.reporter = Reporter()
 
         self.switch_loss = LabelSmoothingLoss(size=4, smoothing=0, padding_idx=0)
+        print('initing')
+        initialize(self, init_type='xavier_normal')
+        print('inited')
 
     def build_sample_data(self, feature_dim=320, cuda=False):
         feature = t.randn((2, 120, feature_dim))
@@ -104,6 +104,13 @@ class Transformer(t.nn.Module):
             return feature.cuda(), feature_length.cuda(), target.cuda(), target_length.cuda()
         else:
             return feature, feature_length, target, target_length
+
+    def get_switch_target(self, ys_out_pad):
+        switch = t.ones_like(ys_out_pad, device=ys_out_pad.device).long()  # eng = 1
+        switch.masked_fill_(ys_out_pad.eq(0), 0)  # pad=0
+        switch.masked_fill_((ys_out_pad.ge(12) & ys_out_pad.le(4211)), 2)  # ch = 2
+        switch.masked_fill_((ys_out_pad.ge(1) & ys_out_pad.le(10)), 3)  # other = 3
+        return switch
 
     def forward(self, xs_pad, ilens, ys_pad, ys_length):
         """E2E forward.
@@ -124,20 +131,24 @@ class Transformer(t.nn.Module):
         if self.spec_augment is not None:
             if self.training:
                 xs_pad = self.spec_augment(xs_pad, ilens)
+
         hs_pad, hs_mask = self.encoder(xs_pad, src_mask)
+
         self.hs_pad = hs_pad
         # 2. forward decoder
         ys_in_pad, ys_out_pad = add_sos_eos(ys_pad, ys_length, self.sos, self.eos, self.ignore_id)
         ys_mask = target_mask(ys_in_pad, self.ignore_id)
         pred_pad, pred_mask = self.decoder(ys_in_pad, ys_mask, hs_pad, hs_mask)
+
+        switch_pred_pad = self.decoder_switch_linear(pred_pad)
         pred_pad = t.nn.functional.log_softmax(self.decoder_linear(pred_pad), -1)
-        self.pred_pad = pred_pad
 
         # 3. compute attention loss
         loss_att = self.criterion(pred_pad, ys_out_pad)
+        ys_switch_pad = self.get_switch_target(ys_out_pad)
+        loss_switch = self.switch_criterion(switch_pred_pad, ys_switch_pad)
         self.acc = th_accuracy(pred_pad.view(-1, self.odim), ys_out_pad,
                                ignore_label=self.ignore_id)
-
         # TODO(karita) show predicted text
         # TODO(karita) calculate these stats
         cer_ctc = None
@@ -150,6 +161,7 @@ class Transformer(t.nn.Module):
             if self.error_calculator is not None:
                 ys_hat = self.ctc.argmax(hs_pad.view(batch_size, -1, self.adim)).data
                 cer_ctc = self.error_calculator(ys_hat.cpu(), ys_pad.cpu(), is_ctc=True)
+                self.cer_ctc = float(cer_ctc)
         # 5. compute cer/wer
         if self.training or self.error_calculator is None:
             cer, wer = None, None
@@ -167,9 +179,12 @@ class Transformer(t.nn.Module):
             loss_att_data = None
             loss_ctc_data = float(loss_ctc)
         else:
-            self.loss = alpha * loss_ctc + (1 - alpha) * loss_att
+            self.loss = alpha * loss_ctc + (1 - 0.1 - alpha) * loss_att + loss_switch * 0.1
             loss_att_data = float(loss_att)
             loss_ctc_data = float(loss_ctc)
+            self.loss_att = loss_att_data
+            self.loss_ctc = loss_ctc_data
+            self.loss_switch = float(loss_switch)
 
         loss_data = float(self.loss)
         if loss_data < CTC_LOSS_THRESHOLD and not math.isnan(loss_data):
@@ -214,7 +229,7 @@ class Transformer(t.nn.Module):
 
         h = enc_output.squeeze(0)
 
-        logging.info('input lengths: ' + str(h.size(0)))
+        print('input lengths: ' + str(h.size(0)))
         # search parms
         beam = recog_args.beam_size
         penalty = recog_args.penalty
@@ -230,8 +245,8 @@ class Transformer(t.nn.Module):
             # maxlen >= 1
             maxlen = max(1, int(recog_args.maxlenratio * h.size(0)))
         minlen = int(recog_args.minlenratio * h.size(0))
-        logging.info('max output length: ' + str(maxlen))
-        logging.info('min output length: ' + str(minlen))
+        print('max output length: ' + str(maxlen))
+        print('min output length: ' + str(minlen))
 
         # initialize hypothesis
         if rnnlm:
@@ -258,7 +273,7 @@ class Transformer(t.nn.Module):
         import six
         traced_decoder = None
         for i in six.moves.range(maxlen):
-            logging.debug('position ' + str(i))
+            print('position ' + str(i))
 
             hyps_best_kept = []
             for hyp in hyps:
@@ -275,6 +290,7 @@ class Transformer(t.nn.Module):
                     local_att_scores = traced_decoder(ys, ys_mask, enc_output)[0]
                 else:
                     local_att_scores = self.decoder.forward_one_step(ys, ys_mask, enc_output)[0]
+                    local_att_scores = t.nn.functional.log_softmax(self.decoder_linear(local_att_scores), -1)
 
                 if rnnlm:
                     rnnlm_state, local_lm_scores = rnnlm.predict(hyp['rnnlm_prev'], vy)
@@ -316,14 +332,14 @@ class Transformer(t.nn.Module):
 
             # sort and get nbest
             hyps = hyps_best_kept
-            logging.debug('number of pruned hypothes: ' + str(len(hyps)))
+            print('number of pruned hypothes: ' + str(len(hyps)))
             if char_list is not None:
-                logging.debug(
+                print(
                     'best hypo: ' + ''.join([char_list[int(x)] for x in hyps[0]['yseq'][1:]]))
 
             # add eos in the final loop to avoid that there are no ended hyps
             if i == maxlen - 1:
-                logging.info('adding <eos> in the last postion in the loop')
+                print('adding <eos> in the last postion in the loop')
                 for hyp in hyps:
                     hyp['yseq'].append(self.eos)
 
@@ -346,36 +362,36 @@ class Transformer(t.nn.Module):
             # end detection
             from espnet.nets.e2e_asr_common import end_detect
             if end_detect(ended_hyps, i) and recog_args.maxlenratio == 0.0:
-                logging.info('end detected at %d', i)
+                print('end detected at %d', i)
                 break
 
             hyps = remained_hyps
             if len(hyps) > 0:
-                logging.debug('remeined hypothes: ' + str(len(hyps)))
+                print('remeined hypothes: ' + str(len(hyps)))
             else:
-                logging.info('no hypothesis. Finish decoding.')
+                print('no hypothesis. Finish decoding.')
                 break
 
             if char_list is not None:
                 for hyp in hyps:
-                    logging.debug(
+                    print(
                         'hypo: ' + ''.join([char_list[int(x)] for x in hyp['yseq'][1:]]))
 
-            logging.debug('number of ended hypothes: ' + str(len(ended_hyps)))
+            print('number of ended hypothes: ' + str(len(ended_hyps)))
 
         nbest_hyps = sorted(
             ended_hyps, key=lambda x: x['score'], reverse=True)[:min(len(ended_hyps), recog_args.nbest)]
 
         # check number of hypotheis
         if len(nbest_hyps) == 0:
-            logging.warning('there is no N-best results, perform recognition again with smaller minlenratio.')
+            print('there is no N-best results, perform recognition again with smaller minlenratio.')
             # should copy becasuse Namespace will be overwritten globally
             recog_args = Namespace(**vars(recog_args))
             recog_args.minlenratio = max(0.0, recog_args.minlenratio - 0.1)
             return self.recognize(x, recog_args, char_list, rnnlm)
 
-        logging.info('total log probability: ' + str(nbest_hyps[0]['score']))
-        logging.info('normalized log probability: ' + str(nbest_hyps[0]['score'] / len(nbest_hyps[0]['yseq'])))
+        print('total log probability: ' + str(nbest_hyps[0]['score']))
+        print('normalized log probability: ' + str(nbest_hyps[0]['score'] / len(nbest_hyps[0]['yseq'])))
         return nbest_hyps
 
     def calculate_all_attentions(self, xs_pad, ilens, ys_pad):

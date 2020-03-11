@@ -40,6 +40,7 @@ class LightningModel(pl.LightningModule):
             smoothing=self.hparams.smoothing,
             mtlalpha=self.hparams.loss_lambda
         )
+        self.load_state_dict()
         # print(f'model parameters num: {sum(p.numel() for p in self.parameters())}')
 
 
@@ -53,7 +54,7 @@ class LightningModel(pl.LightningModule):
         acc = self.transformer.acc
         if self.trainer.use_dp or self.trainer.use_ddp2:
             loss = loss.unsqueeze(0)
-        tqdm_dict = {'train_loss': loss, 'acc': acc, 'switch': self.transformer.loss_switch,'att':self.transformer.loss_att, 'ctc':self.transformer.loss_ctc,'lr': self.lr}
+        tqdm_dict = {'train_loss': loss, 'acc': acc, 'lr': self.lr}
         output = OrderedDict({
             'loss': loss,
             'acc': acc,
@@ -68,7 +69,7 @@ class LightningModel(pl.LightningModule):
         acc = self.transformer.acc
         if self.trainer.use_dp or self.trainer.use_ddp2:
             loss = loss.unsqueeze(0)
-        tqdm_dict = {'val_loss': loss, 'acc': acc, 'switch':self.transformer.loss_switch,'att':self.transformer.loss_att, 'ctc':self.transformer.loss_ctc,'lr': self.lr}
+        tqdm_dict = {'val_loss': loss, 'acc': acc, 'lr': self.lr}
         output = OrderedDict({
             'val_loss': loss,
             'acc': acc,
@@ -87,10 +88,12 @@ class LightningModel(pl.LightningModule):
     def train_dataloader(self):
         dataloader = build_raw_data_loader2(
             [
+                'data/manifest/libri_train.csv',
+
                 # 'data/filterd_manifest/ce_200.csv',
                 # 'data/filterd_manifest/c_500_train.csv',
                 # 'data/filterd_manifest/aidatatang_200zh_train.csv',
-                'data/filterd_manifest/data_aishell_train.csv',
+                # 'data/filterd_manifest/data_aishell_train.csv',
                 # 'data/filterd_manifest/AISHELL-2.csv',
                 # 'data/filterd_manifest/magic_data_train.csv',
                 # 'data/manifest/libri_100.csv',
@@ -100,7 +103,7 @@ class LightningModel(pl.LightningModule):
             vocab_path=self.hparams.vocab_path,
             batch_size=self.hparams.train_batch_size,
             num_workers=self.hparams.train_loader_num_workers,
-            speed_perturb=True
+            speed_perturb=True,
         )
         return dataloader
 
@@ -108,11 +111,12 @@ class LightningModel(pl.LightningModule):
 
         dataloader = build_raw_data_loader2(
             [
+                'data/manifest/libri_test.csv',
                 # 'data/manifest/ce_20_dev.csv',
                 # 'data/filterd_manifest/c_500_test.csv',
                 # 'data/manifest/ce_20_dev_small.csv',
                 # 'aishell2_testing/manifest1.csv',
-                'data/filterd_manifest/data_aishell_test.csv'
+                # 'data/filterd_manifest/data_aishell_test.csv'
             ],
             vocab_path=self.hparams.vocab_path,
             batch_size=self.hparams.train_batch_size,
@@ -144,14 +148,14 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--num_time_mask', default=2, type=int)
         parser.add_argument('--freq_mask_length', default=30, type=int)
         parser.add_argument('--time_mask_length', default=20, type=int)
-        parser.add_argument('--feature_dim', default=480, type=int)
+        parser.add_argument('--feature_dim', default=240, type=int)
         parser.add_argument('--model_size', default=256, type=int)
         parser.add_argument('--feed_forward_size', default=2048, type=int)
         parser.add_argument('--hidden_size', default=64, type=int)
         parser.add_argument('--dropout', default=0.1, type=float)
         parser.add_argument('--num_head', default=4, type=int)
         parser.add_argument('--num_encoder_layer', default=6, type=int)
-        parser.add_argument('--num_decoder_layer', default=12, type=int)
+        parser.add_argument('--num_decoder_layer', default=6, type=int)
         parser.add_argument('--vocab_path', default='testing_vocab.model', type=str)
         parser.add_argument('--max_feature_length', default=1024, type=int)
         parser.add_argument('--max_token_length', default=100, type=int)
@@ -160,7 +164,7 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--smoothing', default=0.1, type=float)
 
         parser.add_argument('--lr', default=3e-4, type=float)
-        parser.add_argument('--warm_up_step', default=25000, type=int)
+        parser.add_argument('--warm_up_step', default=12000, type=int)
         parser.add_argument('--factor', default=1, type=int)
         parser.add_argument('--enable_spec_augment', default=True, type=bool)
 

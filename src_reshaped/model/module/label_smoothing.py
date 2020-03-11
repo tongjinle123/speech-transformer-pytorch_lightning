@@ -1,18 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-# Copyright 2019 Shigeki Karita
-#  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
-
-"""Label smoothing module."""
-
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 
 class LabelSmoothingLoss(nn.Module):
-    """Label-smoothing loss.
-
+    """Label-smoothing loss
     :param int size: the number of class
     :param int padding_idx: ignored class id
     :param float smoothing: smoothing rate (0.0 means the conventional CE)
@@ -20,8 +12,8 @@ class LabelSmoothingLoss(nn.Module):
     :param torch.nn.Module criterion: loss function to be smoothed
     """
 
-    def __init__(self, size, padding_idx, smoothing, normalize_length=False, criterion=nn.KLDivLoss(reduction="none")):
-        """Construct an LabelSmoothingLoss object."""
+    def __init__(self, size, smoothing=0.1, padding_idx=0, normalize_length=True,
+                 criterion=nn.KLDivLoss(reduction='none')):
         super(LabelSmoothingLoss, self).__init__()
         self.criterion = criterion
         self.padding_idx = padding_idx
@@ -32,8 +24,7 @@ class LabelSmoothingLoss(nn.Module):
         self.normalize_length = normalize_length
 
     def forward(self, x, target):
-        """Compute loss between x and target.
-
+        """Compute loss between x and target
         :param torch.Tensor x: prediction (batch, seqlen, class)
         :param torch.Tensor target: target signal masked with self.padding_id (batch, seqlen)
         :return: scalar float value
@@ -43,12 +34,12 @@ class LabelSmoothingLoss(nn.Module):
             smoothing = self.smoothing
             confidence = 1 - smoothing
         else:
-            smoothing = 0.0
-            confidence = 1.0
+            smoothing = 0
+            confidence = 1 - smoothing
         assert x.size(2) == self.size
         batch_size = x.size(0)
         x = x.view(-1, self.size)
-        target = target.view(-1)
+        target = target.reshape(-1)
         with torch.no_grad():
             true_dist = x.clone()
             true_dist.fill_(smoothing / (self.size - 1))

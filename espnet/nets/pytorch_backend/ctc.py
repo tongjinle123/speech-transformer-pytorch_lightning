@@ -17,16 +17,17 @@ class CTC(torch.nn.Module):
     :param bool reduce: reduce the CTC loss into a scalar
     """
 
-    def __init__(self, odim, eprojs, dropout_rate, ctc_type='builtin', reduce=True):
+    def __init__(self, odim, eprojs, dropout_rate, ctc_type='builtin', reduce=True, ignore_id=0):
         super().__init__()
         self.dropout_rate = dropout_rate
         self.loss = None
         self.ctc_lo = torch.nn.Linear(eprojs, odim)
+        torch.nn.init.xavier_normal_(self.ctc_lo.weight)
         self.ctc_type = ctc_type
 
         if self.ctc_type == 'builtin':
-            reduction_type = 'sum' if reduce else 'none'
-            self.ctc_loss = torch.nn.CTCLoss(reduction=reduction_type, zero_infinity=True)
+            reduction_type = 'sum' if reduce else 'mean'
+            self.ctc_loss = torch.nn.CTCLoss(zero_infinity=True, reduction=reduction_type)
         elif self.ctc_type == 'warpctc':
             import warpctc_pytorch as warp_ctc
             self.ctc_loss = warp_ctc.CTCLoss(size_average=True, reduce=reduce)
@@ -34,7 +35,7 @@ class CTC(torch.nn.Module):
             raise ValueError('ctc_type must be "builtin" or "warpctc": {}'
                              .format(self.ctc_type))
 
-        self.ignore_id = -1
+        self.ignore_id = ignore_id
         self.reduce = reduce
 
     def loss_fn(self, th_pred, th_target, th_ilen, th_olen):
@@ -45,7 +46,7 @@ class CTC(torch.nn.Module):
             with torch.backends.cudnn.flags(deterministic=True):
                 loss = self.ctc_loss(th_pred, th_target, th_ilen, th_olen)
             # Batch-size average
-            loss = loss / th_pred.size(1)
+            # loss = loss / th_pred.size(1)
             return loss
         elif self.ctc_type == 'warpctc':
             return self.ctc_loss(th_pred, th_target, th_ilen, th_olen)

@@ -62,11 +62,12 @@ class Encoder(torch.nn.Module):
         super(Encoder, self).__init__()
 
         if input_layer == "linear":
+            from src_test.model.module.gelu import Gelu
             self.embed = torch.nn.Sequential(
                 torch.nn.Linear(idim, attention_dim),
                 torch.nn.LayerNorm(attention_dim),
                 torch.nn.Dropout(dropout_rate),
-                torch.nn.ReLU(),
+                Gelu(),
                 pos_enc_class(attention_dim, positional_dropout_rate)
             )
         elif input_layer == "conv2d":

@@ -1,8 +1,9 @@
 import soundfile
-import torchaudio as ta
 import torch as t
 from src.utils.vocab import Vocab
 import numpy as np
+import librosa
+
 
 
 class Featurizer:
@@ -51,11 +52,20 @@ def concat_and_subsample(features, left_frames=3, right_frames=0, skip_frames=2)
 
     return concated_features[::skip_frames+1, :]
 
+def remove_empty_line_2d(tensor, empty_value=0):
+    if isinstance(tensor, np.ndarray):
+        tensor = t.from_numpy(tensor)
+    sequence_length, feature_size = tensor.size()
+    mask = tensor.sum(1).ne(empty_value).unsqueeze(1).repeat(1, feature_size)
+    tensor = tensor.masked_select(mask).view(-1, feature_size)
+    return tensor
 
-def load_file(file, left_frames=4, right_frames=0, skip_frames=3):
-    sig, _ = soundfile.read(file, dtype='int16')
-    sig = t.from_numpy(sig).unsqueeze(0)
-    feature = ta.compliance.kaldi.fbank(sig, num_mel_bins=80, use_log_fbank=True)
+def load_file(file, left_frames=5, right_frames=0, skip_frames=4):
+    sig, fs = soundfile.read(file, dtype='float32')
+    feature = librosa.feature.melspectrogram(sig, 16000, n_fft=512, hop_length=160, n_mels=80, win_length=400).T
+    feature = remove_empty_line_2d(feature)
+    feature = np.log(1e-20 + feature)
     feature = (feature - feature.mean()) / feature.std()
     feature = concat_and_subsample(feature, left_frames=left_frames, right_frames=right_frames, skip_frames=skip_frames)
     return feature
+

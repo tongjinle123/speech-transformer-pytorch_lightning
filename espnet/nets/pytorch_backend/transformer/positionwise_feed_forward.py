@@ -7,6 +7,7 @@
 """Positionwise feed forward layer definition."""
 
 import torch
+from src_test.model.module.gelu import Gelu
 
 
 class PositionwiseFeedForward(torch.nn.Module):
@@ -22,9 +23,13 @@ class PositionwiseFeedForward(torch.nn.Module):
         """Construct an PositionwiseFeedForward object."""
         super(PositionwiseFeedForward, self).__init__()
         self.w_1 = torch.nn.Linear(idim, hidden_units)
+        self.gelu = Gelu()
         self.w_2 = torch.nn.Linear(hidden_units, idim)
         self.dropout = torch.nn.Dropout(dropout_rate)
 
     def forward(self, x):
         """Forward funciton."""
-        return self.w_2(self.dropout(torch.relu(self.w_1(x))))
+        net = self.w_1(x)
+        net = self.gelu(net)
+        net = self.w_2(net)
+        return net

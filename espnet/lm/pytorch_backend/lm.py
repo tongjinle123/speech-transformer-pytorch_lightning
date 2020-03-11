@@ -87,7 +87,7 @@ def concat_examples(batch, device=None, padding=None):
 class BPTTUpdater(training.StandardUpdater):
     """An updater for a pytorch LM."""
 
-    def __init__(self, train_iter, model, optimizer, schedulers, device,
+    def __init__(self, train_iter, model, optimizer, schedulers, device_id,
                  gradclip=None, use_apex=False, accum_grad=1):
         """Initialize class.
 
@@ -104,7 +104,7 @@ class BPTTUpdater(training.StandardUpdater):
         """
         super(BPTTUpdater, self).__init__(train_iter, optimizer)
         self.model = model
-        self.device = device
+        self.device_id = device_id
         self.gradclip = gradclip
         self.use_apex = use_apex
         self.scheduler = PyTorchScheduler(schedulers, optimizer)
@@ -125,12 +125,12 @@ class BPTTUpdater(training.StandardUpdater):
             # Concatenate the token IDs to matrices and send them to the device
             # self.converter does this job
             # (it is chainer.dataset.concat_examples by default)
-            x, t = concat_examples(batch, device=self.device[0], padding=(0, -100))
-            if self.device[0] == -1:
+            x, t = concat_examples(batch, device=self.device_id[0], padding=(0, -100))
+            if self.device_id[0] == -1:
                 loss, nll, count = self.model(x, t)
             else:
                 # apex does not support torch.nn.DataParallel
-                loss, nll, count = data_parallel(self.model, (x, t), self.device)
+                loss, nll, count = data_parallel(self.model, (x, t), self.device_id)
 
             # backward
             loss = loss.mean() / self.accum_grad
@@ -285,7 +285,7 @@ def train(args):
     setattr(model, "reporter", reporter)
     setattr(optimizer, "target", reporter)
     setattr(optimizer, "serialize", lambda s: reporter.serialize(s))
-
+    print('----------------------', gpu_id[0])
     updater = BPTTUpdater(train_iter, model, optimizer, schedulers, gpu_id,
                           gradclip=args.gradclip,
                           use_apex=use_apex,

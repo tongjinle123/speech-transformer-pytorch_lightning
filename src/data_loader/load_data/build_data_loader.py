@@ -4,7 +4,7 @@ import torch as t
 from torch.nn.utils.rnn import pad_sequence
 import numpy as np
 from prefetch_generator import BackgroundGenerator
-
+from torchvision.datasets import DatasetFolder
 
 class CollateFn:
     def __init__(self):
