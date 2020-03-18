@@ -2,8 +2,8 @@ import gc
 import os
 import sys
 sys.path.append(os.getcwd())
-from src.data_loader.build_data.build_data import build_tfrecord
-from src.data_loader.featurizer.featurizer import Featurizer
+from src.bak.data_loader import build_tfrecord
+from src.bak.data_loader import Featurizer
 
 
 

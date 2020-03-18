@@ -57,8 +57,8 @@ class E2E(ASRInterface, torch.nn.Module):
     def add_arguments(parser):
         """Extend arguments for transducer models.
 
-        Both Transformer and RNN modules are supported.
-        General options encapsulate both modules options.
+        Both Transformer and RNN customized_modules are supported.
+        General options encapsulate both customized_modules options.
 
         """
         group = parser.add_argument_group("transformer model setting")

@@ -1,11 +1,12 @@
-from src.data_loader.featurizer.utils.load import load
-from src.data_loader.featurizer.utils.fbank import Fbank
-from src.data_loader.featurizer.utils.normalize import normalization
-from src.data_loader.featurizer.utils.sub_sample import concat_and_subsample
-from src.data_loader.featurizer.utils.speed_perturb import speed_perturb
+from src.bak.data_loader.featurizer.utils import load
+from src.bak.data_loader.featurizer.utils import Fbank
+from src.bak.data_loader.featurizer.utils import normalization
+from src.bak.data_loader.featurizer.utils import concat_and_subsample
+from src.bak.data_loader.featurizer.utils import speed_perturb
 from src.utils.vocab import Vocab
 import torch as t
-from src.data_loader.featurizer.utils.transformes import MelSpectrogram
+
+
 class Featurizer:
     def __init__(self, n_mel=80, left_frames=3, right_frames=0, skip_frames=2, vocab_path=None, speed_perturb=False):
         super(Featurizer, self).__init__()

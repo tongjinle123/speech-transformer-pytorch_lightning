@@ -2,13 +2,9 @@ import pytorch_lightning as pl
 from test_tube import HyperOptArgumentParser
 from collections import OrderedDict
 import torch as t
-from src.data_loader.load_data.build_raw_loader import build_raw_data_loader2
 from src_test.model.transformer.transformer import Transformer
-from src.utils.radam import AdamW, RAdam
-from src_reshaped.loader.dataloader.audio_loader import build_data_loader, build_predumped_loader
-from src.utils.lookahead import Lookahead
-from src.utils.score import cal_wer
-from src.utils.tokenizer import tokenize
+from src.utils.radam import AdamW
+from src_reshaped.loader.dataloader.audio_loader import build_data_loader
 import numpy as np
 
 
@@ -75,6 +71,8 @@ class LightningModel(pl.LightningModule):
         output = OrderedDict({
             'val_loss': loss,
             'acc': acc,
+            'ctc': self.transformer.loss_ctc,
+            'att': self.transformer.loss_att,
             'progress_bar': tqdm_dict,
             'log': tqdm_dict
         })
@@ -83,9 +81,13 @@ class LightningModel(pl.LightningModule):
     def validation_end(self, outputs):
         val_loss = t.stack([i['val_loss'] for i in outputs]).mean()
         acc = np.mean([i['acc'] for i in outputs])
+        ctc = np.mean([i['ctc'] for i in outputs])
+        att = np.mean([i['att'] for i in outputs])
         print('val_loss', val_loss.item())
         print('acc', acc)
-        return {'val_loss': val_loss, 'val_acc': acc, 'log': {'val_loss': val_loss, 'val_acc': acc}}
+        print('ctc', ctc)
+        print('att', att)
+        return {'val_loss': val_loss, 'val_acc': acc,'val_att': att,'val_ctc':ctc, 'log': {'val_loss': val_loss, 'val_acc': acc, 'val_att': att, 'val_ctc': ctc}}
 
     def train_dataloader(self):
         manifest_list = [
@@ -120,7 +122,26 @@ class LightningModel(pl.LightningModule):
 
         dataloader = build_data_loader(
             manifest_list=manifest_list, batch_size=self.hparams.train_batch_size,
-            num_workers=self.hparams.train_loader_num_workers, left_frames=5, skip_frames=4
+            num_workers=self.hparams.train_loader_num_workers, left_frames=5, skip_frames=4, given_rate=1.0
+        )
+
+        return dataloader
+
+    def test_dataloader(self):
+
+        manifest_list = [
+            'data/filterd_manifest/c_500_test.csv',
+            # 'data/manifest/ce_20_dev.csv'
+        ]
+                            # 'data/manifest/ce_20_dev.csv',
+                            # 'data/filterd_manifest/c_500_test_small.csv',
+                            # 'data/manifest/ce_20_dev_small.csv',
+                            # 'aishell2_testing/manifest1.csv',
+                            # 'data/filterd_manifest/data_aishell_test.csv'
+
+        dataloader = build_data_loader(
+            manifest_list=manifest_list, batch_size=self.hparams.train_batch_size,
+            num_workers=self.hparams.train_loader_num_workers, left_frames=5, skip_frames=4, given_rate=1.0
         )
 
         return dataloader
@@ -160,12 +181,12 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--max_feature_length', default=1024, type=int)
         parser.add_argument('--max_token_length', default=100, type=int)
         parser.add_argument('--share_weight', default=True, type=bool)
-        parser.add_argument('--loss_lambda', default=0.3, type=float)
+        parser.add_argument('--loss_lambda', default=0.2, type=float)
         parser.add_argument('--smoothing', default=0.1, type=float)
 
         parser.add_argument('--lr', default=3e-4, type=float)
         parser.add_argument('--warm_up_step', default=25000, type=int)
-        parser.add_argument('--factor', default=1, type=int)
+        parser.add_argument('--factor', default=0.1, type=int)
         parser.add_argument('--enable_spec_augment', default=True, type=bool)
 
         parser.add_argument('--train_batch_size', default=32, type=int)

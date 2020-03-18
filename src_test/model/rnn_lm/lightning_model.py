@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 from test_tube import HyperOptArgumentParser
 from collections import OrderedDict
 import torch as t
-from src.data_loader.load_data.build_text_loader import build_text_data_loader
+from src.bak.data_loader import build_text_data_loader
 from src_test.model.rnn_lm.rnn_lm import RNNLM, ClassifierWithState
 from src.utils.radam import AdamW, RAdam
 from src.utils.lookahead import Lookahead

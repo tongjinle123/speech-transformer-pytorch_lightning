@@ -13,6 +13,7 @@ import numpy as np
 
 CTC_SCORING_RATIO = 1.5
 
+
 class Transformer(t.nn.Module):
     def __init__(self, num_time_mask=2, num_freq_mask=2, freq_mask_length=15, time_mask_length=15, feature_dim=320,
                  model_size=512, feed_forward_size=1024, dropout=0.1, hidden_size=64, num_head=8, num_encoder_layer=6,

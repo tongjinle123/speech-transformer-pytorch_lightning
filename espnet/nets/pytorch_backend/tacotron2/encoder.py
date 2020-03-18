@@ -4,7 +4,7 @@
 # Copyright 2019 Nagoya University (Tomoki Hayashi)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
-"""Tacotron2 encoder related modules."""
+"""Tacotron2 encoder related customized_modules."""
 
 import six
 
@@ -63,7 +63,7 @@ class Encoder(torch.nn.Module):
         self.idim = idim
         self.use_residual = use_residual
 
-        # define network layer modules
+        # define network layer customized_modules
         self.embed = torch.nn.Embedding(idim, embed_dim, padding_idx=padding_idx)
         if econv_layers > 0:
             self.convs = torch.nn.ModuleList()

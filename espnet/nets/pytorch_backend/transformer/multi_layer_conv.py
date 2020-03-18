@@ -4,7 +4,7 @@
 # Copyright 2019 Tomoki Hayashi
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
-"""Layer modules for FFT block in FastSpeech (Feed-forward Transformer)."""
+"""Layer customized_modules for FFT block in FastSpeech (Feed-forward Transformer)."""
 
 import torch
 

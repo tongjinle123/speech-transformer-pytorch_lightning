@@ -3,7 +3,7 @@ from src.model.modules.spec_augment_layer import SpecAugment
 from src.utils.masker import Masker
 from src.utils.vocab import Vocab
 from src.model.modules.spec_encoder import SpecEncoder
-# from src.model.modules.token_decoder_swich import TokenDecoder
+# from src.model.customized_modules.token_decoder_swich import TokenDecoder
 from src.utils.label_smoothing_ce_loss import LabelSmoothingLoss
 import time
 
@@ -207,7 +207,7 @@ class TokenDecoder(t.nn.Module):
             vocab_size, input_size, padding_idx, max_length, scale_word_embedding=share_weight)
         self.transformer_decoder = TransformerDecoder(
             input_size, feed_forward_size, hidden_size, dropout, num_head, num_layer, use_low_rank)
-        self.layer_norm = t.nn.LayerNorm(input_size, eps=1e-6)
+        self.layer_norm = t.nn.LayerNorm(input_size)
         self.output_layer = t.nn.Linear(input_size, vocab_size, bias=True)
         self.switch_layer = t.nn.Linear(input_size, 3, bias=True)
         t.nn.init.xavier_normal_(self.switch_layer.weight)

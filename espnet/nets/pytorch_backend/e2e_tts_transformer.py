@@ -4,7 +4,7 @@
 # Copyright 2019 Tomoki Hayashi
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
-"""TTS-Transformer related modules."""
+"""TTS-Transformer related customized_modules."""
 
 import logging
 
@@ -223,7 +223,7 @@ class Transformer(TTSInterface, torch.nn.Module):
         group.add_argument("--num-layers-applied-guided-attn", default=2, type=int,
                            help="Number of layers to be applied guided attention loss"
                                 "if set -1, all of the layers will be applied.")
-        group.add_argument("--modules-applied-guided-attn", type=str, nargs="+",
+        group.add_argument("--customized_modules-applied-guided-attn", type=str, nargs="+",
                            default=["encoder-decoder"],
                            help="Module name list to be applied guided attention loss")
         return parser

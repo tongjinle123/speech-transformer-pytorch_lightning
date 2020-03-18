@@ -4,8 +4,7 @@ from test_tube import HyperOptArgumentParser
 from src.utils import RAdam
 from collections import OrderedDict
 import torch as t
-from src.data_loader.load_data.build_data_loader import build_single_dataloader
-import numpy as np
+from src.bak.data_loader import build_single_dataloader
 
 
 class LightningModel(pl.LightningModule):

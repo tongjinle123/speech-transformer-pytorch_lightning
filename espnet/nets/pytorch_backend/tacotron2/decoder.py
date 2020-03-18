@@ -4,7 +4,7 @@
 # Copyright 2019 Nagoya University (Tomoki Hayashi)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
-"""Tacotron2 decoder related modules."""
+"""Tacotron2 decoder related customized_modules."""
 
 import six
 

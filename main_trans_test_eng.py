@@ -38,7 +38,7 @@ def main(hparams):
         nb_sanity_val_steps=5,
         early_stop_callback=False,
         checkpoint_callback=checkpoint,
-        accumulate_grad_batches=2,
+        accumulate_grad_batches=8,
         progress_bar_refresh_rate=10,
         default_save_path='exp/',
         val_check_interval=1.0,
@@ -55,7 +55,7 @@ def main(hparams):
         use_amp=False,
         precision=32,
         # amp_level='O1',
-        resume_from_checkpoint='exp/lightning_logs/version_5005/checkpoints/epoch=19_v1.ckpt'
+        resume_from_checkpoint='exp/lightning_logs/version_5005/checkpoints/epoch=108.ckpt'
     )
     # if hparams.evaluate:
     #     trainer.run_evaluation()

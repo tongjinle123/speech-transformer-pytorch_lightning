@@ -38,7 +38,7 @@ def initialize(model, init_type="pytorch"):
         if p.dim() == 1:
             p.data.zero_()
 
-    # reset some modules with default init
+    # reset some customized_modules with default init
     for m in model.modules():
         if isinstance(m, (torch.nn.Embedding, LayerNorm)):
             m.reset_parameters()

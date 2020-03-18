@@ -2,8 +2,7 @@ import pytorch_lightning as pl
 from test_tube import HyperOptArgumentParser
 from collections import OrderedDict
 import torch as t
-from src.data_loader.load_data.build_data_loader import build_single_dataloader, build_multi_dataloader
-from src.data_loader.load_data.build_raw_loader import build_raw_data_loader
+from src.loader.dataloader.audio_loader import build_data_loader
 from src.model.transformer.transformer import Transformer
 from src.utils.radam import AdamW, RAdam
 from src.utils.lookahead import Lookahead
@@ -109,19 +108,8 @@ class LightningModel(pl.LightningModule):
 
     @pl.data_loader
     def train_dataloader(self):
-        # dataloader = build_multi_dataloader(
-        #     record_root='data/tfrecords/{}.tfrecord',
-        #     index_root='data/tfrecord_index/{}.index',
-        #     data_name_list=[
-        #         # 'magic_data_train_562694',
-        #         'data_aishell_train_117346',
-        #         # 'c_500_train_549679',
-        #         # 'ce_200_161001'
-        #     ],
-        #     batch_size=self.hparams.train_batch_size,
-        #     num_workers=self.hparams.train_loader_num_workers
-        # )
-        dataloader = build_raw_data_loader(
+
+        dataloader = build_data_loader(
             [
                 # 'data/filterd_manifest/ce_200.csv',
                 'data/filterd_manifest/c_500_train.csv',
@@ -136,26 +124,15 @@ class LightningModel(pl.LightningModule):
             vocab_path=self.hparams.vocab_path,
             batch_size=self.hparams.train_batch_size,
             num_workers=self.hparams.train_loader_num_workers,
-            speed_perturb=True
+            left_frames=5,
+            skip_frames=4,
+            given_rate=None
         )
         return dataloader
 
     @pl.data_loader
     def val_dataloader(self):
-        # dataloader = build_multi_dataloader(
-        #     record_root='data/tfrecords/{}.tfrecord',
-        #     index_root='data/tfrecord_index/{}.index',
-        #     data_name_list=[
-        #         'magic_data_test_small_2852',
-        #         'data_aishell_test_small_589',
-        #         # 'c_500_test_small_2245',
-        #         'ce_20_dev_small_814'
-        #     ],
-        #     batch_size=self.hparams.train_batch_size,
-        #     num_workers=self.hparams.train_loader_num_workers
-        #
-        # )
-        dataloader = build_raw_data_loader(
+        dataloader = build_data_loader(
             [
                 # 'data/manifest/ce_20_dev.csv',
                 'data/filterd_manifest/c_500_test.csv',
@@ -166,7 +143,9 @@ class LightningModel(pl.LightningModule):
             vocab_path=self.hparams.vocab_path,
             batch_size=self.hparams.train_batch_size,
             num_workers=self.hparams.train_loader_num_workers,
-            speed_perturb=False
+            left_frames=5,
+            skip_frames=4,
+            given_rate=1.0
         )
         return dataloader
 

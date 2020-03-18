@@ -1,8 +1,8 @@
 import torch as t
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
-from src.data_loader.featurizer.featurizer import Featurizer
-from src.data_loader.featurizer.featurizer2 import Featurizer as Featurizer2
+from src.bak.data_loader import Featurizer
+from src.bak.data_loader.featurizer.featurizer2 import Featurizer as Featurizer2
 import gc
 from prefetch_generator import BackgroundGenerator
 from torch.nn.utils.rnn import pad_sequence

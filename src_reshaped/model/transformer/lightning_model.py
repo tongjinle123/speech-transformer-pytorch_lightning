@@ -4,7 +4,7 @@ from collections import OrderedDict
 import torch as t
 import numpy as np
 from src_reshaped.model.transformer.transformer import Transformer
-from src_reshaped.utils.optimizer import RAdam
+from src_reshaped.utils.optimizer import RAdam, AdamW
 from src_reshaped.loader.dataloader.audio_loader import build_predumped_loader
 
 
@@ -16,6 +16,7 @@ class LightningModel(pl.LightningModule):
         self.lr = 0
 
     def __build_model(self):
+
         self.transformer = Transformer(
             num_time_mask=self.hparams.num_time_mask,
             num_freq_mask=self.hparams.num_freq_mask,

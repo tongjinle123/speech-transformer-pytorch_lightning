@@ -127,12 +127,12 @@ def get_parser():
                         help='Pre-trained TTS model path to initialize encoder.')
     parser.add_argument('--enc-init-mods', default='enc.',
                         type=lambda s: [str(mod) for mod in s.split(',') if s != ''],
-                        help='List of encoder modules to initialize, separated by a comma.')
+                        help='List of encoder customized_modules to initialize, separated by a comma.')
     parser.add_argument('--dec-init', default=None, type=str,
                         help='Pre-trained TTS model path to initialize decoder.')
     parser.add_argument('--dec-init-mods', default='dec.',
                         type=lambda s: [str(mod) for mod in s.split(',') if s != ''],
-                        help='List of decoder modules to initialize, separated by a comma.')
+                        help='List of decoder customized_modules to initialize, separated by a comma.')
 
     return parser
 

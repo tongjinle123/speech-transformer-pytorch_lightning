@@ -44,6 +44,7 @@ class PositionalEncoding(nn.Module):
         Returns:
             torch.Tensor: Encoded tensor. Its shape is (batch, time, ...)
         """
+        print(x.type())
         self.extend_pe(x)
         x = x * self.xscale + self.pe[:, :x.size(1)]
         return self.dropout(x)
@@ -240,6 +241,25 @@ class LinearWithPosEmbedding(nn.Module):
         self.linear = nn.Linear(input_size, d_model)
         self.pos_embedding = ScaledPositionalEncoding(d_model, dropout_rate)
         nn.init.xavier_normal_(self.linear.weight)
+
+    def forward(self, inputs, mask):
+        inputs = self.linear(inputs)
+        inputs = self.pos_embedding(inputs)
+        return inputs, mask
+
+
+
+class LinearWithPosEmbedding2(nn.Module):
+    def __init__(self, input_size, d_model, dropout_rate=0.0):
+        super(LinearWithPosEmbedding2, self).__init__()
+        self.linear = torch.nn.Sequential(
+            nn.Linear(input_size, d_model),
+            nn.LayerNorm(d_model),
+            # nn.Dropout(dropout_rate),
+            # Gelu()
+        )
+        self.pos_embedding = PositionalEncoding(d_model, dropout_rate)
+        nn.init.xavier_normal_(self.linear[0].weight)
 
     def forward(self, inputs, mask):
         inputs = self.linear(inputs)

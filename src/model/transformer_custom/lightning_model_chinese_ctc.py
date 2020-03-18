@@ -2,9 +2,7 @@ import pytorch_lightning as pl
 from test_tube import HyperOptArgumentParser
 from collections import OrderedDict
 import torch as t
-from src.data_loader.load_data.build_data_loader import build_single_dataloader, build_multi_dataloader
-from src.data_loader.load_data.build_raw_loader import build_raw_data_loader
-from src.data_loader.load_data.build_raw_loader import build_raw_data_loader2
+from src.loader.dataloader.audio_loader import build_data_loader
 from src.model.transformer_custom.transformer import Transformer
 from src.utils.radam import AdamW, RAdam
 from src.utils.lookahead import Lookahead
@@ -67,8 +65,8 @@ class LightningModel(pl.LightningModule):
             feature, feature_length, target, target_length, True)
         ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
         # ctc_switch_loss = self.transformer.cal_ctc_switch_loss(spec_swtich_out, feature_length, enc_switch_target, ori_token_length)
-        loss = ce_loss * 0.8 + switch_loss * 0.1 + ctc_loss * 0.1# + ctc_switch_loss * 0.1
-        tqdm_dict = {'loss': loss, 'ce': ce_loss, 'ctc': ctc_loss, 'lr': self.lr}
+        loss = ce_loss * 0.7 + switch_loss * 0.1 + ctc_loss * 0.2# + ctc_switch_loss * 0.1
+        tqdm_dict = {'train_loss': loss, 'ce': ce_loss, 'ctc': ctc_loss, 'switch': switch_loss, 'lr': self.lr}
         output = OrderedDict({
             'loss': loss,
             'ce_loss': ce_loss,
@@ -86,8 +84,8 @@ class LightningModel(pl.LightningModule):
             feature, feature_length, target, target_length, True)
         ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
         # ctc_switch_loss = self.transformer.cal_ctc_switch_loss(spec_swtich_out, feature_length, enc_switch_target, ori_token_length)
-        loss = ce_loss * 0.8 + switch_loss * 0.1 + ctc_loss * 0.1# + ctc_switch_loss * 0.1
-        tqdm_dict = {'loss': loss, 'ce': ce_loss, 'ctc': ctc_loss, 'lr': self.lr}
+        loss = ce_loss * 0.7 + switch_loss * 0.1 + ctc_loss * 0.2# + ctc_switch_loss * 0.1
+        tqdm_dict = {'val_loss': loss, 'ce': ce_loss, 'ctc': ctc_loss, 'switch': switch_loss,'lr': self.lr}
         output = OrderedDict({
             'loss': loss,
             'ce_loss': ce_loss,
@@ -109,32 +107,21 @@ class LightningModel(pl.LightningModule):
         print('val_loss', val_loss.item())
         print('ce_loss', ce_loss.item())
         print('ctc_loss', ctc_loss.item())
-        # print('switch_loss', switch_loss.item())
+        print('switch_loss', switch_loss.item())
+        # print('switch_ct_closs', ctc_switch_loss.item())
         # print('mer', mer)
-        return {'val_loss': val_loss, 'val_ce_loss': ce_loss, 'log': {'val_loss': val_loss, 'val_ce_loss': ce_loss,'ctc_loss': ctc_loss}}
+        ret = {'val_loss': val_loss, 'val_ce_loss': ce_loss, 'switch': switch_loss,'log': {'val_loss': val_loss, 'val_ce_loss': ce_loss,'ctc_loss': ctc_loss, 'switch': switch_loss}}
+        return ret
 
     @pl.data_loader
     def train_dataloader(self):
-        # dataloader = build_multi_dataloader(
-        #     record_root='data/tfrecords/{}.tfrecord',
-        #     index_root='data/tfrecord_index/{}.index',
-        #     data_name_list=[
-        #         # 'magic_data_train_562694',
-        #         'data_aishell_train_117346',
-        #         # 'c_500_train_549679',
-        #         # 'ce_200_161001'
-        #     ],
-        #     batch_size=self.hparams.train_batch_size,
-        #     num_workers=self.hparams.train_loader_num_workers
-        # )
-        dataloader = build_raw_data_loader2(
+        dataloader = build_data_loader(
             [
-                'data/filterd_manifest/aidatatang_200zh_train.csv',
-                'data/manifest/libri_train.csv',
-                'data/filterd_manifest/ce_200.csv',
+                # 'data/filterd_manifest/ce_200.csv',
+                # 'data/manifest/libri_train.csv',
                 # 'data/filterd_manifest/c_500_train.csv',
                 # 'data/filterd_manifest/aidatatang_200zh_train.csv',
-                # 'data/filterd_manifest/data_aishell_train.csv',
+                'data/filterd_manifest/data_aishell_train.csv',
                 # 'data/filterd_manifest/AISHELL-2.csv',
                 # 'data/filterd_manifest/magic_data_train.csv',
                 # 'data/manifest/libri_100.csv',
@@ -144,39 +131,37 @@ class LightningModel(pl.LightningModule):
             vocab_path=self.hparams.vocab_path,
             batch_size=self.hparams.train_batch_size,
             num_workers=self.hparams.train_loader_num_workers,
-            speed_perturb=True
+            left_frames=5,
+            skip_frames=4,
+            min_duration=1,
+            max_duration=7,
+            given_rate=None
         )
         return dataloader
 
     @pl.data_loader
     def val_dataloader(self):
-        # dataloader = build_multi_dataloader(
-        #     record_root='data/tfrecords/{}.tfrecord',
-        #     index_root='data/tfrecord_index/{}.index',
-        #     data_name_list=[
-        #         'magic_data_test_small_2852',
-        #         'data_aishell_test_small_589',
-        #         # 'c_500_test_small_2245',
-        #         'ce_20_dev_small_814'
-        #     ],
-        #     batch_size=self.hparams.train_batch_size,
-        #     num_workers=self.hparams.train_loader_num_workers
-        #
-        # )
-        dataloader = build_raw_data_loader2(
+        dataloader = build_data_loader(
             [
-                # 'data/filterd_manifest/aidatatang_200zh_dev.csv'
+                # 'data/filterd_manifest/ce_200.csv',
                 # 'data/manifest/libri_test.csv',
-                # 'data/manifest/ce_20_dev.csv',
-                # 'data/filterd_manifest/c_500_test.csv',
-                'data/manifest/ce_20_dev_small.csv',
-                # 'aishell2_testing/manifest1.csv',
-                # 'data/filterd_manifest/data_aishell_test.csv'
+                # 'data/filterd_manifest/c_500_train.csv',
+                # 'data/filterd_manifest/aidatatang_200zh_train.csv',
+                'data/filterd_manifest/data_aishell_dev.csv',
+                # 'data/filterd_manifest/AISHELL-2.csv',
+                # 'data/filterd_manifest/magic_data_train.csv',
+                # 'data/manifest/libri_100.csv',
+                # 'data/manifest/libri_360.csv',
+                # 'data/manifest/libri_500.csv'
             ],
             vocab_path=self.hparams.vocab_path,
             batch_size=self.hparams.train_batch_size,
             num_workers=self.hparams.train_loader_num_workers,
-            speed_perturb=False
+            left_frames=5,
+            skip_frames=4,
+            min_duration=1,
+            max_duration=7,
+            given_rate=1.0
         )
         return dataloader
 
@@ -185,7 +170,7 @@ class LightningModel(pl.LightningModule):
                 (self.hparams.model_size ** -0.5) * min(
             (self.global_step + 1) ** -0.5, (self.global_step + 1) * (self.hparams.warm_up_step ** -1.5))
         )
-        lr = lr if lr <=5e-5 else 5e-5
+        lr = lr if lr <=3e-4 else 3e-4
         self.lr = lr
         for pg in optimizer.param_groups:
             pg['lr'] = lr
@@ -193,7 +178,7 @@ class LightningModel(pl.LightningModule):
         optimizer.zero_grad()
 
     def configure_optimizers(self):
-        optimizer = AdamW(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.997), eps=1e-4)
+        optimizer = AdamW(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.999))
         # optimizer = Lookahead(optimizer)
         return optimizer
 
@@ -204,14 +189,14 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--num_time_mask', default=2, type=int)
         parser.add_argument('--freq_mask_length', default=30, type=int)
         parser.add_argument('--time_mask_length', default=20, type=int)
-        parser.add_argument('--feature_dim', default=400, type=int)
+        parser.add_argument('--feature_dim', default=480, type=int)
         parser.add_argument('--model_size', default=512, type=int)
         parser.add_argument('--feed_forward_size', default=2048, type=int)
         parser.add_argument('--hidden_size', default=64, type=int)
         parser.add_argument('--dropout', default=0.1, type=float)
-        parser.add_argument('--num_head', default=8, type=int)
-        parser.add_argument('--num_encoder_layer', default=6, type=int)
-        parser.add_argument('--num_decoder_layer', default=6, type=int)
+        parser.add_argument('--num_head', default=4, type=int)
+        parser.add_argument('--num_encoder_layer', default=8, type=int)
+        parser.add_argument('--num_decoder_layer', default=8, type=int)
         parser.add_argument('--vocab_path', default='testing_vocab.model', type=str)
         parser.add_argument('--max_feature_length', default=1024, type=int)
         parser.add_argument('--max_token_length', default=100, type=int)
@@ -221,13 +206,13 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--use_low_rank', default=False, type=bool)
 
         parser.add_argument('--lr', default=3e-4, type=float)
-        parser.add_argument('--warm_up_step', default=16000, type=int)
+        parser.add_argument('--warm_up_step', default=12000, type=int)
         parser.add_argument('--factor', default=1, type=int)
         parser.add_argument('--enable_spec_augment', default=False, type=bool)
 
         parser.add_argument('--train_batch_size', default=32, type=int)
-        parser.add_argument('--train_loader_num_workers', default=16, type=int)
+        parser.add_argument('--train_loader_num_workers', default=32, type=int)
         parser.add_argument('--val_batch_size', default=32, type=int)
-        parser.add_argument('--val_loader_num_workers', default=16, type=int)
+        parser.add_argument('--val_loader_num_workers', default=32, type=int)
 
         return parser

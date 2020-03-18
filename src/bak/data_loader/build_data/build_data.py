@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import sys
 sys.path.append(os.getcwd())
-from src.data_loader.featurizer import Featurizer
+from src.bak.data_loader import Featurizer
 from tqdm import tqdm
 
 

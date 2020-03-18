@@ -1,4 +1,4 @@
-"""Attention modules for RNN."""
+"""Attention customized_modules for RNN."""
 
 import math
 import six
@@ -1460,7 +1460,7 @@ def att_for(args, num_att=1, han_mode=False):
     """Instantiates an attention module given the program arguments
 
     :param Namespace args: The arguments
-    :param int num_att: number of attention modules (in multi-speaker case, it can be 2 or more)
+    :param int num_att: number of attention customized_modules (in multi-speaker case, it can be 2 or more)
     :param bool han_mode: switch on/off mode of hierarchical attention network (HAN)
     :rtype torch.nn.Module
     :return: The attention module

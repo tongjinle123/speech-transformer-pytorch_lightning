@@ -49,9 +49,9 @@ def main(hparams):
         max_nb_epochs=hparams.epochs,
         gradient_clip_val=5.0,
         min_nb_epochs=3000,
-        use_amp=True,
-        amp_level='O1',
-        nb_sanity_val_steps=0
+        use_amp=False,
+        precision=32,
+        nb_sanity_val_steps=5
     )
     # if hparams.evaluate:
     #     trainer.run_evaluation()

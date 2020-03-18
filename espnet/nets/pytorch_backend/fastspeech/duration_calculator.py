@@ -4,7 +4,7 @@
 # Copyright 2019 Tomoki Hayashi
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
-"""Duration calculator related modules."""
+"""Duration calculator related customized_modules."""
 
 import torch
 

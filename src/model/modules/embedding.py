@@ -1,7 +1,7 @@
 import torch as t
 import math
 import torch
-from src.model.modules.vgg_down_sample import ScaledPositionalEncoding
+from src.model.modules.vgg_down_sample import ScaledPositionalEncoding, PositionalEncoding
 
 
 class Embedding(t.nn.Module):
@@ -12,17 +12,17 @@ class Embedding(t.nn.Module):
                  scale_word_embedding=True):
         super(Embedding, self).__init__()
         self.word_embedding = t.nn.Embedding(vocab_size, embedding_size, padding_idx)
-        self.position_embedding = ScaledPositionalEncoding(
+        self.position_embedding = PositionalEncoding(
             d_model=embedding_size, dropout_rate=dropout, max_len=max_length)
         t.nn.init.xavier_normal_(self.word_embedding.weight)
-        # t.nn.init.normal_(self.word_embedding.weight, mean=0, std=1/(embedding_size ** -0.5))
-        if scale_word_embedding:
-            self.scale = math.sqrt(embedding_size)
-        else:
-            self.scale = 1
+        # # t.nn.init.normal_(self.word_embedding.weight, mean=0, std=1/(embedding_size ** -0.5))
+        # if scale_word_embedding:
+        #     self.scale = math.sqrt(embedding_size)
+        # else:
+        #     self.scale = 1
 
     def forward(self, word_id):
-        embedding = self.word_embedding(word_id) * self.scale
+        embedding = self.word_embedding(word_id)# * self.scale
         embedding = self.position_embedding(embedding)
         return embedding
 

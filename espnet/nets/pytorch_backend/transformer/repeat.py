@@ -24,7 +24,7 @@ def repeat(N, fn):
 
     :param int N: repeat time
     :param function fn: function to generate module
-    :return: repeated modules
+    :return: repeated customized_modules
     :rtype: MultiSequential
     """
     return MultiSequential(*[fn() for _ in range(N)])

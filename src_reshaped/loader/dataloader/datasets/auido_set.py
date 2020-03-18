@@ -32,7 +32,6 @@ class AudioSet(Dataset):
         self.load_manifest(manifest, min_duration, max_duration)
 
     def load_manifest(self, manifest, min_duration, max_duration):
-        print(manifest)
         self.df = pd.read_csv(manifest)
         self.df = self.df[(self.df.duration > min_duration) & (self.df.duration < max_duration)]
         former = len(self.df)
@@ -40,7 +39,6 @@ class AudioSet(Dataset):
             lambda x: self.vocab.unk_id in x)]
         print(
             f'filtered {manifest}: {former - len(self.df)} datas, former is {former}, now {len(self.df)}')
-
         self.df = self.df.reset_index()
         self.df = self.df[['wav_file', 'target']]
         self.df = self.df.to_dict('index')

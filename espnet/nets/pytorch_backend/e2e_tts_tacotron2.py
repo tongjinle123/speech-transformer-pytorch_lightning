@@ -4,7 +4,7 @@
 # Copyright 2018 Nagoya University (Tomoki Hayashi)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
-"""Tacotron 2 related modules."""
+"""Tacotron 2 related customized_modules."""
 
 import logging
 
@@ -428,7 +428,7 @@ class Tacotron2(TTSInterface, torch.nn.Module):
         # set padding idx
         padding_idx = 0
 
-        # define network modules
+        # define network customized_modules
         self.enc = Encoder(idim=idim,
                            embed_dim=args.embed_dim,
                            elayers=args.elayers,

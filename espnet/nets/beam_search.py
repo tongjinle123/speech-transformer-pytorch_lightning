@@ -42,7 +42,7 @@ class BeamSearch(torch.nn.Module):
         """Initialize beam search.
 
         Args:
-            scorers (dict[str, ScorerInterface]): Dict of decoder modules e.g., Decoder, CTCPrefixScorer, LM
+            scorers (dict[str, ScorerInterface]): Dict of decoder customized_modules e.g., Decoder, CTCPrefixScorer, LM
                 The scorer will be ignored if it is `None`
             weights (dict[str, float]): Dict of weights for each scorers
                 The scorer will be ignored if its weight is 0
@@ -379,7 +379,7 @@ def beam_search(x: torch.Tensor, sos: int, eos: int, beam_size: int, vocab_size:
         eos (int): End of sequence id
         beam_size (int): The number of hypotheses kept during search
         vocab_size (int): The number of vocabulary
-        scorers (dict[str, ScorerInterface]): Dict of decoder modules e.g., Decoder, CTCPrefixScorer, LM
+        scorers (dict[str, ScorerInterface]): Dict of decoder customized_modules e.g., Decoder, CTCPrefixScorer, LM
             The scorer will be ignored if it is `None`
         weights (dict[str, float]): Dict of weights for each scorers
             The scorer will be ignored if its weight is 0

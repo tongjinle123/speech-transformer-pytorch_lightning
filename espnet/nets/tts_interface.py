@@ -3,7 +3,7 @@
 # Copyright 2018 Nagoya University (Tomoki Hayashi)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
-"""TTS Interface realted modules."""
+"""TTS Interface realted customized_modules."""
 
 import chainer
 

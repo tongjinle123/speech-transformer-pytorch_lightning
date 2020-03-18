@@ -28,12 +28,13 @@ def main(hparams):
     exp_root = 'exp'
     log_folder = 'lightning_logs'
     log_root = os.path.join(exp_root, log_folder)
-    logger = TestTubeLogger(exp_root, name=log_folder, version=1020)
-    checkpoint = ModelCheckpoint(filepath='exp/lightning_logs/version_1020/checkpoints/',
+    logger = TestTubeLogger(exp_root, name=log_folder, version=1021)
+    checkpoint = ModelCheckpoint(filepath='exp/lightning_logs/version_1021/checkpoints/',
                                  monitor='val_mer', verbose=1, save_top_k=-1)
     trainer = Trainer(
         logger=logger,
         early_stop_callback=False,
+        accumulate_grad_batches=3,
         checkpoint_callback=checkpoint,
         # checkpoint_callback=checkpoint,
         # fast_dev_run=True,
@@ -49,8 +50,10 @@ def main(hparams):
         gradient_clip_val=5.0,
         min_nb_epochs=3000,
         use_amp=True,
-        amp_level='O1',
-        nb_sanity_val_steps=0
+        precision=16,
+        val_percent_check=0.1,
+        nb_sanity_val_steps=0,
+        progress_bar_refresh_rate=10,
     )
     # if hparams.evaluate:
     #     trainer.run_evaluation()

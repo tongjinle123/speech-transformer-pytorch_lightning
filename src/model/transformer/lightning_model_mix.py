@@ -2,8 +2,8 @@ import pytorch_lightning as pl
 from test_tube import HyperOptArgumentParser
 from collections import OrderedDict
 import torch as t
-from src.data_loader.load_data.build_data_loader import build_single_dataloader, build_multi_dataloader
-from src.data_loader.load_data.build_raw_loader import build_raw_data_loader
+from src.bak.data_loader import build_single_dataloader, build_multi_dataloader
+from src.bak.data_loader import build_raw_data_loader
 from src.model.transformer.transformer import Transformer
 from src.utils.radam import AdamW, RAdam
 from src.utils.lookahead import Lookahead

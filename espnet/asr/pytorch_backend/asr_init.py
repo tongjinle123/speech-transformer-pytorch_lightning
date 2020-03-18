@@ -17,7 +17,7 @@ from espnet.utils.dynamic_import import dynamic_import
 
 
 def transfer_verification(model_state_dict, partial_state_dict, modules):
-    """Verify tuples (key, shape) for input model modules match specified modules.
+    """Verify tuples (key, shape) for input model customized_modules match specified customized_modules.
 
     Args:
         model_state_dict (OrderedDict): the initial model state_dict
@@ -37,7 +37,7 @@ def transfer_verification(model_state_dict, partial_state_dict, modules):
 
 
 def get_partial_state_dict(model_state_dict, modules):
-    """Create state_dict with specified modules matching input model modules.
+    """Create state_dict with specified customized_modules matching input model customized_modules.
 
     Note that get_partial_lm_state_dict is used if a LM specified.
 
@@ -61,7 +61,7 @@ def get_partial_state_dict(model_state_dict, modules):
 def get_partial_lm_state_dict(model_state_dict, modules):
     """Create compatible ASR state_dict from model_state_dict (LM).
 
-    The keys for specified modules are modified to match ASR decoder modules keys.
+    The keys for specified customized_modules are modified to match ASR decoder customized_modules keys.
 
     Args:
         model_state_dict (OrderedDict): trained model state_dict
@@ -89,7 +89,7 @@ def get_partial_lm_state_dict(model_state_dict, modules):
 
 
 def filter_modules(model_state_dict, modules):
-    """Filter non-matched modules in module_state_dict.
+    """Filter non-matched customized_modules in module_state_dict.
 
     Args:
         model_state_dict (OrderedDict): trained model state_dict
@@ -111,8 +111,8 @@ def filter_modules(model_state_dict, modules):
 
     if incorrect_mods:
         logging.warning("module(s) %s don\'t match or (partially match) "
-                        "available modules in model.", incorrect_mods)
-        logging.warning('for information, the existing modules in model are:')
+                        "available customized_modules in model.", incorrect_mods)
+        logging.warning('for information, the existing customized_modules in model are:')
         logging.warning('%s', mods_model)
 
     return new_mods
@@ -179,7 +179,7 @@ def get_trained_model_state_dict(model_path):
 
 
 def load_trained_modules(idim, odim, args, interface=ASRInterface):
-    """Load model encoder or/and decoder modules with ESPNET pre-trained model(s).
+    """Load model encoder or/and decoder customized_modules with ESPNET pre-trained model(s).
 
     Args:
         idim (int): initial input dimension.
@@ -188,7 +188,7 @@ def load_trained_modules(idim, odim, args, interface=ASRInterface):
         interface (Interface): ASRInterface or STInterface or TTSInterface.
 
     Return:
-        model (torch.nn.Module): The model with pretrained modules.
+        model (torch.nn.Module): The model with pretrained customized_modules.
 
     """
     enc_model_path = args.enc_init
@@ -222,7 +222,7 @@ def load_trained_modules(idim, odim, args, interface=ASRInterface):
                                 logging.warning('override %s' % k)
                             main_state_dict.update(partial_state_dict)
                         else:
-                            logging.warning('modules %s in model %s don\'t match your training config',
+                            logging.warning('customized_modules %s in model %s don\'t match your training config',
                                             modules, model_path)
             else:
                 logging.warning('model was not found : %s', model_path)
