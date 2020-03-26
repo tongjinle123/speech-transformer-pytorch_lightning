@@ -55,8 +55,6 @@ class LightningModel(pl.LightningModule):
 
     def training_step(self, batch, batch_nb):
         feature, feature_length, target, target_length = batch[0], batch[1], batch[2], batch[3]
-        # feature = feature[:, :feature_length.max(), :]
-        # target = target[:, :target_length.max()]
         model_output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss = self.forward(
             feature, feature_length, target, target_length, True)
         ctc_loss = self.transformer.cal_ctc_loss(spec_output, feature_length, ori_token, ori_token_length)
@@ -74,8 +72,6 @@ class LightningModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_nb):
         feature, feature_length, target, target_length = batch[0], batch[1], batch[2], batch[3]
-        # feature = feature[:, :feature_length.max(), :]
-        # target = target[:, :target_length.max()]
         model_output, output_token, spec_output, feature_length, ori_token, ori_token_length, ce_loss, switch_loss = self.forward(
             feature, feature_length, target, target_length, True)
         result_string_list = [' '.join(tokenize(i)) for i in self.transformer.inference(feature, feature_length)]
@@ -122,18 +118,12 @@ class LightningModel(pl.LightningModule):
         dataloader = build_data_loader(
             [
                 'data/filterd_manifest/ce_200.csv',
-                'data/manifest/libri_train.csv',
-                'data/filterd_manifest/c_500.csv',
-                'data/filterd_manifest/aidatatang_200zh_train.csv',
-                'data/filterd_manifest/aidatatang_200zh_dev.csv',
-                'data/filterd_manifest/aidatatang_200zh_test.csv',
-                'data/filterd_manifest/data_aishell_train.csv',
-                'data/filterd_manifest/data_aishell_dev.csv',
-                'data/filterd_manifest/aishell2_ch.csv',
-                'data/filterd_manifest/magic_data_train.csv',
-                'data/filterd_manifest/magic_data_dev.csv',
-                'data/filterd_manifest/magic_data_test.csv',
-                'data/filterd_manifest/stcmds.csv',
+                # 'data/manifest/libri_train.csv',
+                # 'data/filterd_manifest/c_500.csv',
+                # 'data/filterd_manifest/aidatatang_200zh_train.csv',
+                # 'data/filterd_manifest/data_aishell_train.csv',
+                # 'data/filterd_manifest/AISHELL-2.csv',
+                # 'data/filterd_manifest/magic_data_train.csv',
                 # 'data/manifest/libri_100.csv',
                 # 'data/manifest/libri_360.csv',
                 # 'data/manifest/libri_500.csv'
@@ -145,7 +135,7 @@ class LightningModel(pl.LightningModule):
             skip_frames=4,
             min_duration=1,
             max_duration=8,
-            given_rate=1.0
+            given_rate=None
         )
         return dataloader
 
@@ -170,9 +160,7 @@ class LightningModel(pl.LightningModule):
             skip_frames=4,
             min_duration=1,
             max_duration=8,
-            shuffle=False,
             given_rate=1.0
-
         )
         return dataloader
 
@@ -198,7 +186,7 @@ class LightningModel(pl.LightningModule):
         parser = HyperOptArgumentParser(parents=[parent_parser])
         parser.add_argument('--num_freq_mask', default=2, type=int)
         parser.add_argument('--num_time_mask', default=2, type=int)
-        parser.add_argument('--freq_mask_length', default=20, type=int)
+        parser.add_argument('--freq_mask_length', default=30, type=int)
         parser.add_argument('--time_mask_length', default=20, type=int)
         parser.add_argument('--feature_dim', default=480, type=int)
         parser.add_argument('--model_size', default=512, type=int)
@@ -216,14 +204,14 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--smoothing', default=0.1, type=float)
         parser.add_argument('--use_low_rank', default=False, type=bool)
 
-        parser.add_argument('--lr', default=3e-4, type=float)
+        parser.add_argument('--lr', default=5e-6, type=float)
         parser.add_argument('--warm_up_step', default=16000, type=int)
         parser.add_argument('--factor', default=1, type=int)
         parser.add_argument('--enable_spec_augment', default=True, type=bool)
 
-        parser.add_argument('--train_batch_size', default=64, type=int)
-        parser.add_argument('--train_loader_num_workers', default=32, type=int)
-        parser.add_argument('--val_batch_size', default=64, type=int)
+        parser.add_argument('--train_batch_size', default=32, type=int)
+        parser.add_argument('--train_loader_num_workers', default=16, type=int)
+        parser.add_argument('--val_batch_size', default=32, type=int)
         parser.add_argument('--val_loader_num_workers', default=16, type=int)
 
         return parser

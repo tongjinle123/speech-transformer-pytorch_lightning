@@ -38,7 +38,7 @@ class LightningModel(pl.LightningModule):
             share_weight=self.hparams.share_weight,
             smoothing=self.hparams.smoothing,
         )
-        x = t.load('exp/lightning_logs/version_1024/checkpoints/epoch=47.ckpt')['state_dict']
+        x = t.load('exp/lightning_logs/version_1025/checkpoints/epoch=5_v0.ckpt')['state_dict']
         self.load_state_dict(x)
 
     def forward(self, feature, feature_length, target, target_length, cal_ce_loss=True):
@@ -202,7 +202,7 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--loss_lambda', default=0.8, type=float)
         parser.add_argument('--smoothing', default=0.1, type=float)
 
-        parser.add_argument('--lr', default=6e-7, type=float)
+        parser.add_argument('--lr', default=5e-7, type=float)
         parser.add_argument('--warm_up_step', default=16000, type=int)
         parser.add_argument('--factor', default=1, type=int)
         parser.add_argument('--enable_spec_augment', default=True, type=bool)

@@ -132,7 +132,9 @@ class Transformer(t.nn.Module):
 
     def inference(self, feature, feature_length, decode_type='greedy'):
         feature, feature_mask, feature_self_attention_mask = self._prepare_feature(
-            feature, feature_length, restrict_left_length=20, restrict_right_length=20)
+            feature, feature_length, restrict_left_length=self.restrict_left_length,
+            restrict_right_length=self.restrict_right_length
+        )
         spec_feature = self.spec_encoder(feature, feature_mask, feature_self_attention_mask)
 
         def cut_sentence(line_token, eos_id):
@@ -230,9 +232,6 @@ class Transformer(t.nn.Module):
                 ys_self_attention_mask = Masker.get_dot_mask(ys_mask, ys_mask)
                 ys_self_attention_mask = Masker.get_forward_mask(ys_self_attention_mask)
                 dot_attention_mask = Masker.get_dot_mask(ys_mask, feature_mask)
-                # print(ys_mask)
-                # print(ys_self_attention_mask)
-                # print(dot_attention_mask)
                 ys = t.tensor(hyp['yseq']).unsqueeze(0)
                 local_att_scores = self.token_decoder.forward_one_step(ys, enc_output, ys_mask, ys_self_attention_mask, dot_attention_mask)[0]
                 local_att_scores = t.nn.functional.log_softmax(local_att_scores, -1)
@@ -304,17 +303,17 @@ class Transformer(t.nn.Module):
                     remained_hyps.append(hyp)
 
             # end detection
-            if end_detect(ended_hyps, i) and maxlenratio == 0.0:
-                # print('end detected at %d', i)
-                break
+            # if end_detect(ended_hyps, i) and maxlenratio == 0.0:
+            #     print('end detected at %d', i)
+            #     # break
 
             hyps = remained_hyps
-            if len(hyps) > 0:
-                pass
-                # print('remeined hypothes: ' + str(len(hyps)))
-            else:
-                # print('no hypothesis. Finish decoding.')
-                break
+            # if len(hyps) > 0:
+            #     # pass
+            #     print('remeined hypothes: ' + str(len(hyps)))
+            # else:
+            #     print('no hypothesis. Finish decoding.')
+            #     # break
 
             # if char_list is not None:
             #     for hyp in hyps:

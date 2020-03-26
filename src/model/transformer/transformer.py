@@ -206,7 +206,6 @@ class Transformer(t.nn.Module):
         else:
             hyp = {'score': 0.0, 'yseq': [y]}
         if lpz is not None:
-
             ctc_prefix_score = CTCPrefixScore(lpz.detach().numpy(), self.vocab.blank_id, self.vocab.eos_id, np)
             hyp['ctc_state_prev'] = ctc_prefix_score.initial_state()
             hyp['ctc_score_prev'] = 0.0
