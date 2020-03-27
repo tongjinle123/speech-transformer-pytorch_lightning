@@ -2,7 +2,10 @@ End2End chinese-english code-switch speech recognition in pytorch
 
 
 ## This is a mixed project borrowing from many awesome projects recently.
-With pytorch-lightning, experiments can be carried out easily
+With pytorch-lightning, experiments can be carried out easily.
+And i will try to make evey calculation in a batched and cleaned way.
+(such as add bos & eos into batched target and spec augment) Any ideas can be put into the issues,
+and welcome for discussion. (This project is still being building and reorganizing)
 
 project features:
 
