@@ -1,7 +1,7 @@
 End2End chinese-english code-switch speech recognition in pytorch
 
 
-## This is a mixed project borrowing from many awesome projects recently.
+## This is a mixed project borrowing from many awesome projects opened recently.
 With pytorch-lightning, experiments can be carried out easily.
 And i will try to make evey calculation in a batched and cleaned way.
 (such as add bos & eos into batched target and spec augment) Any ideas can be put into the issues,
@@ -16,16 +16,18 @@ project features:
     sentence piece tokenizer for english tokenizing
     rnn_lm training
     label smoothing
+    customized transformer encoder and decoder see: src/model/modules/transformer_encoder...
 
 feature:
 
     log fbank with sub sample
     speed augment
-    a spec augment layer using gpu as a layer in model
+    a spec augment using gpu as a layer in model
+    customized feature filtering , see src/loader/utils/build_fbank remove_empty_line_2d
 
 optimizer:
 
-    ranger
+    Ranger
 
 model:
 
@@ -52,6 +54,8 @@ references:
     https://github.com/vahidk/tfrecord
     https://github.com/kaituoxu/Speech-Transformer
     https://github.com/majumderb/rezero
+    https://github.com/lessw2020/Ranger-Deep-Learning-Optimizer
+
 
 
 data:

@@ -3,8 +3,6 @@ from src.model.transformer_rezero.customized_modules.rezero_multi_head_attention
 from src.model.transformer_rezero.customized_modules.rezero_feed_forward import FeedForwardReZeroBlock
 
 
-
-
 class TransformerDecoder(t.nn.Module):
     """
     transformer decoder
