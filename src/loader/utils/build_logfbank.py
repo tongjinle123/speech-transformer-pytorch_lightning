@@ -24,8 +24,6 @@ def build_logfbank_normalize(sig, n_mels=80, n_fft=512, win_length=400, hop_leng
     feature = remove_empty_line_2d(feature)
     if isinstance(feature, np.ndarray):
         feature = t.from_numpy(feature)
-    feature = t.log(np.finfo(float).eps + feature)
+    feature = t.log(1e-30 + feature)
     feature = (feature - feature.mean()) / feature.std()
     return feature.numpy()
-
-

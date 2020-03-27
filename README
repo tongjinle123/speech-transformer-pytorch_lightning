@@ -1,0 +1,66 @@
+End2End chinese-english code-switch speech recognition in pytorch
+
+
+## This is a mixed project borrowing from many awesome projects recently.
+With pytorch-lightning, experiments can be carried out easily
+
+project features:
+
+    joint attention & ctc beam search decode with rnn lm
+    multi dataset
+    using pytorch lightning for 16bit training
+    Chinese-char level & English-word level tokenizer
+    sentence piece tokenizer for english tokenizing
+    rnn_lm training
+    label smoothing
+
+feature:
+
+    log fbank with sub sample
+    speed augment
+    a spec augment layer using gpu as a layer in model
+
+optimizer:
+
+    ranger
+
+model:
+
+    rezero transformer
+    restricted encoder field
+    better mask  (may be a little slower than other project but effective)
+
+loss:
+
+    lambda * ce loss + (1-lambda * ctc loss) + code switch loss
+
+requirement:
+
+    see docker/
+
+
+references:
+
+    https://github.com/ZhengkunTian/OpenTransformer
+    https://github.com/espnet/espnet
+    https://github.com/jadore801120/attention-is-all-you-need-pytorch
+    https://github.com/alphadl/lookahead.pytorch
+    https://github.com/LiyuanLucasLiu/RAdam
+    https://github.com/vahidk/tfrecord
+    https://github.com/kaituoxu/Speech-Transformer
+    https://github.com/majumderb/rezero
+
+
+data:
+    aishell1 170h
+    aishell2 1000h
+    magic data 750h
+    prime 100h
+    stcmd 100h
+    datatang 200h
+    datatang 500h
+    datatang mix 200h
+    librispeech 960h
+
+
+

@@ -15,4 +15,3 @@ def speed_perturb2(sig, given_rate=None):
     rate = given_rate
     perturbed = t.nn.functional.interpolate(sig.unsqueeze(0), scale_factor=rate)
     return perturbed[0]
-

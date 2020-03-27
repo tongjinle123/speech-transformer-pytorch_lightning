@@ -1,7 +1,7 @@
 import torch as t
 from torch.utils.data import Dataset, DataLoader
-from src_reshaped.loader.utils.load_file_main import LoadFile
-from src_reshaped.utils.vocab import Vocab
+from src.loader.utils.load_file_main import LoadFile
+from src.utils.vocab import Vocab
 import pandas as pd
 import os
 
@@ -56,6 +56,12 @@ class AudioSet(Dataset):
         target = self.vocab.str2id(target)
         target_length = len(target)
         return feature, feature_length, target, target_length
+
+    def load_wav(self, file):
+        feature = self.load_file(file, self.given_rate)
+        feature_length = feature.shape[0]
+        return feature, feature_length
+
 
 if __name__ == '__main__':
     audioset = AudioSet('data/manifest/ce_200.csv')

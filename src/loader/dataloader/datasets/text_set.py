@@ -1,6 +1,6 @@
 import torch as t
 from torch.utils.data import Dataset
-from src_reshaped.utils.vocab import Vocab
+from src.utils.vocab import Vocab
 import pandas as pd
 
 
