@@ -17,6 +17,7 @@ project features:
     rnn_lm training
     label smoothing
     customized transformer encoder and decoder see: src/model/modules/transformer_encoder...
+    *rezero transformer for some converge and speed consideration
 
 feature:
 
@@ -62,12 +63,13 @@ data:
     aishell1 170h
     aishell2 1000h
     magic data 750h
-    prime 100h
-    stcmd 100h
+    prime 100h not used
+    stcmd 100h not used
     datatang 200h
     datatang 500h
     datatang mix 200h
     librispeech 960h
 
+train step
 
-
+    english -> eng(sub) + mix + chinese -> chinese + mix -> mix

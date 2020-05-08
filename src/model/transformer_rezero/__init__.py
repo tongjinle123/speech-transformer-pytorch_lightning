@@ -1,1 +1,2 @@
 from .lightning_model import LightningModel
+from .lightning_model_gpu import LightningModel as LightningModelGpu

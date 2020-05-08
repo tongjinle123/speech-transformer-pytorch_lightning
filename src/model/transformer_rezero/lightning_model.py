@@ -122,18 +122,18 @@ class LightningModel(pl.LightningModule):
         dataloader = build_data_loader(
             [
                 'data/filterd_manifest/ce_200.csv',
-                'data/manifest/libri_train.csv',
-                'data/filterd_manifest/c_500.csv',
-                'data/filterd_manifest/aidatatang_200zh_train.csv',
-                'data/filterd_manifest/aidatatang_200zh_dev.csv',
-                'data/filterd_manifest/aidatatang_200zh_test.csv',
-                'data/filterd_manifest/data_aishell_train.csv',
-                'data/filterd_manifest/data_aishell_dev.csv',
-                'data/filterd_manifest/aishell2_ch.csv',
-                'data/filterd_manifest/magic_data_train.csv',
-                'data/filterd_manifest/magic_data_dev.csv',
-                'data/filterd_manifest/magic_data_test.csv',
-                'data/filterd_manifest/stcmds.csv',
+                # 'data/manifest/libri_train.csv',
+                # 'data/filterd_manifest/c_500.csv',
+                # 'data/filterd_manifest/aidatatang_200zh_train.csv',
+                # 'data/filterd_manifest/aidatatang_200zh_dev.csv',
+                # 'data/filterd_manifest/aidatatang_200zh_test.csv',
+                # 'data/filterd_manifest/data_aishell_train.csv',
+                # 'data/filterd_manifest/data_aishell_dev.csv',
+                # 'data/filterd_manifest/aishell2_ch.csv',
+                # 'data/filterd_manifest/magic_data_train.csv',
+                # 'data/filterd_manifest/magic_data_dev.csv',
+                # 'data/filterd_manifest/magic_data_test.csv',
+                # 'data/filterd_manifest/stcmds.csv',
                 # 'data/manifest/libri_100.csv',
                 # 'data/manifest/libri_360.csv',
                 # 'data/manifest/libri_500.csv'
@@ -145,7 +145,7 @@ class LightningModel(pl.LightningModule):
             skip_frames=4,
             min_duration=1,
             max_duration=8,
-            given_rate=1.0
+            given_rate=None
         )
         return dataloader
 
@@ -216,7 +216,7 @@ class LightningModel(pl.LightningModule):
         parser.add_argument('--smoothing', default=0.1, type=float)
         parser.add_argument('--use_low_rank', default=False, type=bool)
 
-        parser.add_argument('--lr', default=3e-4, type=float)
+        parser.add_argument('--lr', default=5e-5, type=float)
         parser.add_argument('--warm_up_step', default=16000, type=int)
         parser.add_argument('--factor', default=1, type=int)
         parser.add_argument('--enable_spec_augment', default=True, type=bool)

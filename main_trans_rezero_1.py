@@ -35,7 +35,7 @@ def main(hparams):
     trainer = Trainer(
         logger=logger,
         early_stop_callback=False,
-        accumulate_grad_batches=3,
+        accumulate_grad_batches=4,
         checkpoint_callback=checkpoint,
         # checkpoint_callback=checkpoint,
         # fast_dev_run=True,
@@ -56,7 +56,7 @@ def main(hparams):
         precision=16,
         nb_sanity_val_steps=0,
         progress_bar_refresh_rate=1,
-        resume_from_checkpoint='exp/lightning_logs/version_2000/checkpoints/epoch=100_v2.ckpt'
+        resume_from_checkpoint='exp/lightning_logs/version_2000/checkpoints/epoch=114_v1.ckpt'
     )
     # if hparams.evaluate:
     #     trainer.run_evaluation()
